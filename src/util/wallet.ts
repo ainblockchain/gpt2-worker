@@ -38,6 +38,10 @@ export default class Wallet {
     return this.address;
   }
 
+  /**
+   * Sign Transaction.
+   * @param tx
+   */
   private signTx(tx: ainUtil.TransactionBody) {
     const keyBuffer = Buffer.from(this.privateKey, 'hex');
     const sig = ainUtil.ecSignTransaction(tx, keyBuffer);
@@ -55,10 +59,16 @@ export default class Wallet {
     };
   }
 
-  public signaturePayload(value: any, ref: string) {
+  /**
+   * Get sSgnature Payload.
+   * @param value
+   * @param ref
+   * @param type
+   */
+  public signaturePayload(value: any, ref: string, type: string) {
     const transaction = {
       operation: {
-        type: 'SET_VALUE',
+        type,
         ref,
         value,
       },

@@ -3,29 +3,55 @@ import Firebase from '../common/firebase';
 import * as types from '../common/types';
 import * as constants from '../common/constants';
 
-export default class Worker {
-  private wallet: Wallet;
+export default class FirebaseUtil {
+  static instance: FirebaseUtil;
 
-  private firebase: Firebase;
+  private workerName: string;
 
-  private workerName: string
+  constructor(private wallet: Wallet, private firebase: Firebase) {
+    this.workerName = constants.WORKER_NAME!;
+  }
 
-  constructor(mnemonic: string, workerName: string, env: types.EnvType) {
-    this.wallet = new Wallet(mnemonic);
-    this.workerName = workerName;
-    this.firebase = new Firebase(env);
+  /**
+   * Get Custom Firebase Token And Login.
+   */
+  static async getInstance() {
+    if (!FirebaseUtil.instance) {
+      const wallet = new Wallet(constants.MNEMONIC!);
+      const firebase = new Firebase(constants.NODE_ENV as types.EnvType);
+      const data = wallet.signaturePayload({
+        params: {
+          address: wallet.getAddress(),
+        },
+      }, '', 'GET_AUTH_TOKEN');
+      const res = await firebase.getInstance().functions()
+        .httpsCallable('getAuthToken')(data.signedTx);
+      await firebase.getInstance().auth().signInWithCustomToken(res.data.customToken);
+      FirebaseUtil.instance = new FirebaseUtil(wallet, firebase);
+    }
+
+    return FirebaseUtil.instance;
   }
 
   public getAddress() {
     return this.wallet.getAddress();
   }
 
+  /**
+   * Call Firebase Functions for sending Job output.
+   * @param value Job output.
+   * @param dbpath Firebase DB Path.
+   */
   public async response(value: any, dbpath: string) {
-    const data = this.wallet.signaturePayload(value, dbpath);
+    const data = this.wallet.signaturePayload(value, dbpath, 'SET_VALUE');
     await this.firebase.getInstance().functions()
       .httpsCallable('inferResponse')(data.signedTx);
   }
 
+  /**
+   * Request Method About Job.
+   * @param method ML Job.
+   */
   public listenRequest(method: Function) {
     this.firebase.getInstance().database()
       .ref(`/inference/${this.workerName}@${this.wallet.getAddress()}`)
@@ -64,10 +90,21 @@ export default class Worker {
       });
   }
 
+  /**
+   * Set Worker Information to Firebase DB.
+   * @param workerInfo Worker Info.
+   */
   public async setWorkerInfo(workerInfo: types.WorkerInfo) {
-    // const path = `/worker/info/${this.workerName}@${this.getAddress()}`;
-    // eslint-disable-next-line no-console
-    console.log(workerInfo);
-    // TODO
+    const dbpath = `/worker/info/${this.workerName}@${this.getAddress()}`;
+    const data = this.wallet.signaturePayload({
+      ...workerInfo,
+      updatedAt: Date.now(),
+      params: {
+        address: this.getAddress(),
+        workerName: this.workerName,
+      },
+    }, dbpath, 'SET_VALUE');
+    await this.firebase.getInstance().functions()
+      .httpsCallable('setWorkerInfo')(data.signedTx); // temp Functions Name.
   }
 }

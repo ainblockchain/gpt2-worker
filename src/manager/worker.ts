@@ -2,7 +2,7 @@ import axios from 'axios';
 import Logger from '../common/logger';
 import * as types from '../common/types';
 import Docker from './docker';
-import Firebase from '../util/firebase';
+import FirebaseUtil from '../util/firebase';
 import * as constants from '../common/constants';
 
 const log = Logger.createLogger('manager.worker');
@@ -12,27 +12,26 @@ export default class Worker {
 
   protected dockerApi: Docker;
 
-  protected firebase: Firebase;
+  protected firebase: FirebaseUtil;
 
   protected workerInfo: types.WorkerInfo;
 
   static workerInfoUpdateSec = 10;
 
-  constructor(workerInfo: types.WorkerInfo, dockerApi: Docker, firebase: Firebase) {
+  constructor(workerInfo: types.WorkerInfo, dockerApi: Docker, firebase: FirebaseUtil) {
     this.workerInfo = workerInfo;
     this.dockerApi = dockerApi;
     this.firebase = firebase;
   }
 
   /**
-   * Get WorkerBase instance for Singleton Pattern.
-   * @returns WorkerBase instance.
+   * Get Worke instance for Singleton Pattern.
+   * @returns Worker instance.
   */
   static async getInstance() {
     if (!Worker.instance) {
       const dockerApi = await Docker.getInstance();
-      const firebase = new Firebase(constants.MNEMONIC!,
-        constants.WORKER_NAME!, constants.NODE_ENV as types.EnvType);
+      const firebase = await FirebaseUtil.getInstance();
       Worker.instance = new Worker({
         jobType: constants.MODEL_NAME as string,
       }, dockerApi, firebase);
@@ -60,6 +59,9 @@ export default class Worker {
     }, 5000);
   }
 
+  /**
+   * Create Container for Serving ML Job.
+  */
   async init() {
     log.info('[+] Start to create Job container');
     if (!constants.modelInfo[constants.MODEL_NAME!]) {
@@ -67,16 +69,23 @@ export default class Worker {
     }
     const modelInfo = constants.modelInfo[constants.MODEL_NAME!];
     await this.dockerApi.run(constants.MODEL_NAME!, modelInfo.imagePath,
-      constants.GPU_DEVICE_NUMBER!, constants.JOB_PORT!, modelInfo.port);
+      constants.GPU_DEVICE_NUMBER!, constants.JOB_PORT!, String(modelInfo.port));
     log.info('[+] success to create Job container');
   }
 
+  /**
+   * Request to ML Container.
+  */
   public runJob = async (input: {[key: string]: string}) => {
     log.debug('[+] runJob');
-    // temp (Only tenworflow serving)
-    const data = {
+    const vector = JSON.parse(input.inputVector.replace(/'/g, ''));
+    const data = (constants.modelInfo[constants.MODEL_NAME!].framework === 'tensorflow') ? {
       signature_name: 'predict',
-      instances: JSON.parse(input.instances.replace(/'/g, '')),
+      instances: vector,
+    } : {
+      num_samples: input.num_samples,
+      length: input.length,
+      text: vector,
     };
     const modelInfo = constants.modelInfo[constants.MODEL_NAME!];
     const res = await axios({
@@ -87,6 +96,10 @@ export default class Worker {
       },
       data,
     });
-    return { predictions: JSON.stringify(res.data.predictions) };
+    return (constants.modelInfo[constants.MODEL_NAME!].framework === 'tensorflow') ? {
+      predictions: JSON.stringify(res.data.predictions),
+    } : {
+      predictions: JSON.stringify(res.data),
+    };
   }
 }

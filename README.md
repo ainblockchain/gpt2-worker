@@ -22,13 +22,13 @@
 ```
 yarn
 NODE_ENV={staging or prod} WORKER_NAME={worker_name} MNEMONIC={mnemonic}  \
- MODEL_NAME={Model Name} GPU_DEVICE_NUMBER={ex. 1} WORKER_PORT=5000 JOB_PORT=5050 yarn start
+ MODEL_NAME={Model Name} GPU_DEVICE_NUMBER={ex. 1} JOB_PORT=5050 yarn start
 
 // or
 
-docker run -d -p {WORKER_PORT}:{WORKER_PORT} --name worker \
+docker run -d --name worker \
  -e NODE_ENV={staging or prod} -e WORKER_NAME={worker_name} -e MNEMONIC={mnemonic}  \
- -e MODEL_NAME={Model Name}' -e WORKER_PORT=5000 -e JOB_PORT=5050  -e GPU_DEVICE_NUMBER={ex. 1} \
+ -e MODEL_NAME={Model Name} -e JOB_PORT=5050  -e GPU_DEVICE_NUMBER={ex. 1} \
  --network host  -v /var/run/docker.sock:/var/run/docker.sock ainblockchain/worker-docker 
 ```
 

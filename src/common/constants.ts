@@ -1,3 +1,5 @@
+import * as types from './types';
+
 export const PROD_FIREBASE_CONFIG = {
   apiKey: 'AIzaSyA_ss5fiOD6bckPQk7qnb_Ruwd29OVWXE8',
   authDomain: 'gpt2-ainetwork.firebaseapp.com',
@@ -24,7 +26,6 @@ export const {
   WORKER_NAME,
   MNEMONIC,
   MODEL_NAME,
-  WORKER_PORT,
   JOB_PORT,
   GPU_DEVICE_NUMBER,
 } = process.env;
@@ -38,24 +39,19 @@ export const statusCode = {
 
 export const NODE_ENV = process.env.NODE_ENV || 'prod';
 
-export const modelInfo = {
+export const modelInfo: types.ModelInfo = {
   'gpt-2-large-length-1': {
     apiPath: '/v1/models/gpt-2-large:predict',
     method: 'post',
     imagePath: 'gkswjdzz/gpt-2-large-length-1',
     port: 8501,
-  },
-  test: {
-    apiPath: '/',
-    method: 'get',
-    imagePath: 'vad1mo/hello-world-rest',
-    port: 5050,
+    framework: 'tensorflow',
   },
 };
 
 export const validateConstants = () => {
-  if (!WORKER_NAME || !MNEMONIC || !MODEL_NAME || !GPU_DEVICE_NUMBER
-    || !['prod', 'staging'].includes(NODE_ENV) || !WORKER_PORT || !JOB_PORT) {
+  if (!WORKER_NAME || !MNEMONIC || !MODEL_NAME || !modelInfo[MODEL_NAME] || !GPU_DEVICE_NUMBER
+    || !['prod', 'staging'].includes(NODE_ENV) || !JOB_PORT) {
     return false;
   }
   return true;
