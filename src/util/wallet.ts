@@ -1,6 +1,9 @@
-import { mnemonicToSeedSync } from 'bip39';
+import { mnemonicToSeedSync, generateMnemonic } from 'bip39';
 import * as ainUtil from '@ainblockchain/ain-util';
 import HDKey from 'hdkey';
+import Logger from '../common/logger';
+
+const log = Logger.createLogger('manager.worker');
 
 export default class Wallet {
   private wallet: any;
@@ -13,10 +16,16 @@ export default class Wallet {
 
   private privateKey: string;
 
-  constructor(mnemonic: string) {
-    const key = HDKey.fromMasterSeed(mnemonicToSeedSync(mnemonic));
+  constructor(mnemonic?: string) {
+    if (!mnemonic) {
+      this.mnemonic = generateMnemonic();
+      log.info(`[+] Create mnemonic: ${this.mnemonic}`);
+    } else {
+      this.mnemonic = mnemonic;
+    }
+
+    const key = HDKey.fromMasterSeed(mnemonicToSeedSync(this.mnemonic));
     this.wallet = key.derive("m/44'/412'/0'/0/0"); /* default wallet address for AIN */
-    this.mnemonic = mnemonic;
     this.privateKey = this.wallet.privateKey;
     this.secretKey = `0x${this.wallet.privateKey.toString('hex')}`;
     this.address = ainUtil.toChecksumAddress(`0x${ainUtil.pubToAddress(this.wallet.publicKey, true).toString('hex')}`);
