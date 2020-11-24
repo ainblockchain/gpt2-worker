@@ -82,6 +82,7 @@ export default class FirebaseUtil {
           ...result,
           updatedAt: Date.now(),
           params: {
+            ...value.params,
             address: this.getAddress(),
             requestId,
             workerName: this.workerName,

@@ -47,6 +47,13 @@ export const modelInfo: types.ModelInfo = {
     port: 8501,
     framework: 'tensorflow',
   },
+  'gpt-2-large-torch-serving': {
+    apiPath: '/predictions/gpt2-large',
+    method: 'post',
+    imagePath: 'gkswjdzz/gpt-2-large-torch-serving',
+    port: 8080,
+    framework: 'pytorch',
+  },
 };
 
 export const validateConstants = () => {

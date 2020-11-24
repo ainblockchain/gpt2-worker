@@ -80,13 +80,14 @@ export default class Worker {
   */
   public runJob = async (input: {[key: string]: any}) => {
     log.debug('[+] runJob');
+    const vector = JSON.parse(input.data.inputVector.replace(/'/g, ''));
     const data = (constants.modelInfo[constants.MODEL_NAME!].framework === 'tensorflow') ? {
       signature_name: 'predict',
-      instances: JSON.parse(input.data.instances.replace(/'/g, '')),
+      instances: [vector],
     } : {
-      num_samples: input.num_samples,
-      length: input.length,
-      text: JSON.parse(input.data.text.replace(/'/g, '')),
+      num_samples: input.data.num_samples,
+      length: input.data.length,
+      text: vector,
     };
     const modelInfo = constants.modelInfo[constants.MODEL_NAME!];
     const res = await axios({
@@ -98,15 +99,9 @@ export default class Worker {
       data,
     });
     return (constants.modelInfo[constants.MODEL_NAME!].framework === 'tensorflow') ? {
-      params: input.params,
-      result: {
-        predictions: JSON.stringify([res.data.predictions]),
-      },
+      predictions: JSON.stringify(res.data.predictions),
     } : {
-      params: input.params,
-      result: {
-        predictions: JSON.stringify(res.data),
-      },
+      predictions: JSON.stringify(res.data),
     };
   }
 }
