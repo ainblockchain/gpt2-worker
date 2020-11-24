@@ -67,25 +67,26 @@ export default class Worker {
     if (!constants.modelInfo[constants.MODEL_NAME!]) {
       throw new Error(`Invalid Model ${constants.MODEL_NAME}`);
     }
-    const modelInfo = constants.modelInfo[constants.MODEL_NAME!];
-    await this.dockerApi.run(constants.MODEL_NAME!, modelInfo.imagePath,
-      constants.GPU_DEVICE_NUMBER!, constants.JOB_PORT!, String(modelInfo.port));
-    log.info('[+] success to create Job container');
+    if (constants.TEST !== 'true') {
+      const modelInfo = constants.modelInfo[constants.MODEL_NAME!];
+      await this.dockerApi.run(constants.MODEL_NAME!, modelInfo.imagePath,
+        constants.GPU_DEVICE_NUMBER!, constants.JOB_PORT!, String(modelInfo.port));
+      log.info('[+] success to create Job container');
+    }
   }
 
   /**
    * Request to ML Container.
   */
-  public runJob = async (input: {[key: string]: string}) => {
+  public runJob = async (input: {[key: string]: any}) => {
     log.debug('[+] runJob');
-    const vector = JSON.parse(input.inputVector.replace(/'/g, ''));
     const data = (constants.modelInfo[constants.MODEL_NAME!].framework === 'tensorflow') ? {
       signature_name: 'predict',
-      instances: vector,
+      instances: JSON.parse(input.data.instances.replace(/'/g, '')),
     } : {
       num_samples: input.num_samples,
       length: input.length,
-      text: vector,
+      text: JSON.parse(input.data.text.replace(/'/g, '')),
     };
     const modelInfo = constants.modelInfo[constants.MODEL_NAME!];
     const res = await axios({
@@ -97,9 +98,15 @@ export default class Worker {
       data,
     });
     return (constants.modelInfo[constants.MODEL_NAME!].framework === 'tensorflow') ? {
-      predictions: JSON.stringify(res.data.predictions),
+      params: input.params,
+      result: {
+        predictions: JSON.stringify([res.data.predictions]),
+      },
     } : {
-      predictions: JSON.stringify(res.data),
+      params: input.params,
+      result: {
+        predictions: JSON.stringify(res.data),
+      },
     };
   }
 }

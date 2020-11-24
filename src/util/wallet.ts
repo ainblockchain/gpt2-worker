@@ -51,7 +51,7 @@ export default class Wallet {
    * Sign Transaction.
    * @param tx
    */
-  private signTx(tx: ainUtil.TransactionBody) {
+  public signTx(tx: ainUtil.TransactionBody) {
     const keyBuffer = Buffer.from(this.privateKey, 'hex');
     const sig = ainUtil.ecSignTransaction(tx, keyBuffer);
     const sigBuffer = ainUtil.toBuffer(sig);

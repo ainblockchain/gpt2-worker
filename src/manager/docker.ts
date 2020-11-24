@@ -27,8 +27,10 @@ export default class Docker {
   static async getInstance(): Promise<Docker> {
     if (!Docker.instance) {
       const dockerode = new Dockerode({ socketPath: '/var/run/docker.sock' });
-      const dockerInfo = await dockerode.info();
-      if (!dockerInfo.Runtimes.nvidia) throw new Error('Not GPU Version.');
+      if (constants.TEST !== 'true') {
+        const dockerInfo = await dockerode.info();
+        if (!dockerInfo.Runtimes.nvidia) throw new Error('Not GPU Version.');
+      }
       Docker.instance = new Docker(dockerode);
     }
     return Docker.instance;

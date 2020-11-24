@@ -28,10 +28,10 @@ export const {
   MODEL_NAME,
   JOB_PORT,
   GPU_DEVICE_NUMBER,
+  TEST,
 } = process.env;
 
 export const MAX_IMAGE_COUNT = 2;
-
 export const statusCode = {
   Success: 0,
   Failed: 1,
