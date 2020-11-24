@@ -116,7 +116,7 @@ export default class FirebaseUtil {
     const dbpath = `/accounts/${this.getAddress()}/balance`;
     const snap = await this.firebase.getInstance().database().ref(dbpath)
       .once('value');
-    return (snap.val()) ? snap.val() : 1000;
+    return (snap.val()) ? snap.val() : 0;
   }
 
   private buildTransferTxBody(timestamp: number, payoutAmount: number) {

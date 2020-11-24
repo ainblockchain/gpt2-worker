@@ -57,12 +57,12 @@ export const modelInfo: types.ModelInfo = {
   },
 };
 
-export const payoutPoolAddr = '0x28653A33E5E6e983F426B9321f51939B367Dd40d'; // temp
+export const payoutPoolAddr = '0x07B0bd9b3583Ec5864807cfD768733A250301a07'; // temp
 
 export const THRESHOLD_AMOUNT = 1000; // temp
 
 export const validateConstants = () => {
-  if (!WORKER_NAME || !MNEMONIC || ETH_ADDRESS || !MODEL_NAME
+  if (!WORKER_NAME || !MNEMONIC || !ETH_ADDRESS || !MODEL_NAME
     || !modelInfo[MODEL_NAME] || !GPU_DEVICE_NUMBER
     || !['prod', 'staging'].includes(NODE_ENV) || !JOB_PORT) {
     return false;
