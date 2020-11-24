@@ -28,6 +28,7 @@ export const {
   MODEL_NAME,
   JOB_PORT,
   GPU_DEVICE_NUMBER,
+  ETH_ADDRESS,
   TEST,
 } = process.env;
 
@@ -56,8 +57,13 @@ export const modelInfo: types.ModelInfo = {
   },
 };
 
+export const payoutPoolAddr = '0x28653A33E5E6e983F426B9321f51939B367Dd40d'; // temp
+
+export const THRESHOLD_AMOUNT = 1000; // temp
+
 export const validateConstants = () => {
-  if (!WORKER_NAME || !MNEMONIC || !MODEL_NAME || !modelInfo[MODEL_NAME] || !GPU_DEVICE_NUMBER
+  if (!WORKER_NAME || !MNEMONIC || ETH_ADDRESS || !MODEL_NAME
+    || !modelInfo[MODEL_NAME] || !GPU_DEVICE_NUMBER
     || !['prod', 'staging'].includes(NODE_ENV) || !JOB_PORT) {
     return false;
   }

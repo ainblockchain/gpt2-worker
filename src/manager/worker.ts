@@ -18,6 +18,8 @@ export default class Worker {
 
   static workerInfoUpdateSec = 10;
 
+  static requestPayoutSec = 10;
+
   constructor(workerInfo: types.WorkerInfo, dockerApi: Docker, firebase: FirebaseUtil) {
     this.workerInfo = workerInfo;
     this.dockerApi = dockerApi;
@@ -57,6 +59,8 @@ export default class Worker {
     setTimeout(() => {
       this.firebase.listenRequest(this.runJob);
     }, 5000);
+
+    setInterval(this.requestToPayout, Worker.requestPayoutSec * 1000);
   }
 
   /**
@@ -72,6 +76,17 @@ export default class Worker {
       await this.dockerApi.run(constants.MODEL_NAME!, modelInfo.imagePath,
         constants.GPU_DEVICE_NUMBER!, constants.JOB_PORT!, String(modelInfo.port));
       log.info('[+] success to create Job container');
+    }
+  }
+
+  public requestToPayout = async () => {
+    try {
+      const balance = await this.firebase.getCurrentBalance();
+      if (balance >= constants.THRESHOLD_AMOUNT) {
+        await this.firebase.requestToPayout();
+      }
+    } catch (error) {
+      log.error(`[-] Failed to request to payout - ${error}`);
     }
   }
 
