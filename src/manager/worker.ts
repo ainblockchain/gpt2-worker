@@ -81,10 +81,13 @@ export default class Worker {
 
   public requestToPayout = async () => {
     try {
-      const balance = await this.firebase.getCurrentBalance();
-      if (balance >= constants.THRESHOLD_AMOUNT) {
-        await this.firebase.requestToPayout();
-      }
+      // @TODO
+      // const balance = await this.firebase.getCurrentBalance();
+      // await this.firebase.requestToPayout();
+      // if (balance >= constants.THRESHOLD_AMOUNT) {
+      //   await this.firebase.requestToPayout();
+      // }
+      await this.firebase.requestToPayout();
     } catch (error) {
       log.error(`[-] Failed to request to payout - ${error}`);
     }
