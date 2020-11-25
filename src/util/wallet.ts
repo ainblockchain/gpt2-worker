@@ -69,7 +69,7 @@ export default class Wallet {
   }
 
   /**
-   * Get sSgnature Payload.
+   * Get Signature Payload.
    * @param value
    * @param ref
    * @param type

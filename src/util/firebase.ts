@@ -59,7 +59,7 @@ export default class FirebaseUtil {
         if (!data.exists()) return;
         const requestId = data.key as string;
         const value = data.val();
-        const dbpath = `/inference_result/${requestId}/${this.workerName}@${this.wallet.getAddress()}`;
+        const dbpath = `/inference_result/${requestId}`;
         const snap = await this.firebase.getInstance().database()
           .ref(dbpath).once('value');
         if (snap.exists()) { // already has response
@@ -103,9 +103,65 @@ export default class FirebaseUtil {
       params: {
         address: this.getAddress(),
         workerName: this.workerName,
+        jobType: constants.MODEL_NAME,
       },
     }, dbpath, 'SET_VALUE');
     await this.firebase.getInstance().functions()
       .httpsCallable('setWorkerInfo')(data.signedTx); // temp Functions Name.
+  }
+
+  /**
+   * Get Current Balance.
+   */
+  public async getCurrentBalance() {
+    const dbpath = `/accounts/${this.getAddress()}/balance`;
+    const snap = await this.firebase.getInstance().database().ref(dbpath)
+      .once('value');
+    return (snap.val()) ? snap.val() : 0;
+  }
+
+  private buildTransferTxBody(timestamp: number, payoutAmount: number) {
+    const requestId = String(timestamp);
+    return {
+      operation: {
+        type: 'SET_VALUE',
+        ref: `/transfer/${this.getAddress()}/${constants.payoutPoolAddr}/${requestId}/value`,
+        value: payoutAmount,
+      },
+      timestamp,
+      nonce: -1,
+    };
+  }
+
+  private buildAinPayoutTxBody(timestamp: number, payoutAmount: number) {
+    const payloadTx = this.wallet.signTx(
+      this.buildTransferTxBody(timestamp, payoutAmount),
+    );
+    const requestId = String(timestamp);
+
+    return {
+      operation: {
+        type: 'SET_VALUE',
+        ref: `/ain_payout/${this.getAddress()}/${requestId}`,
+        value: {
+          ethAddress: constants.ETH_ADDRESS,
+          amount: payoutAmount,
+          status: 'REQUESTED',
+          payload: payloadTx.signedTx,
+        },
+      },
+      timestamp,
+      nonce: -1,
+    };
+  }
+
+  /**
+   * Request To Payout
+   */
+  public async requestToPayout() {
+    const timestamp = Date.now();
+    const txBody = this.buildAinPayoutTxBody(timestamp, constants.THRESHOLD_AMOUNT);
+    const { signedTx } = this.wallet.signTx(txBody);
+    await this.firebase.getInstance().functions().httpsCallable('sendSignedTransaction')(signedTx);
   }
 }
