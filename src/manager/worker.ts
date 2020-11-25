@@ -16,9 +16,9 @@ export default class Worker {
 
   protected workerInfo: types.WorkerInfo;
 
-  static workerInfoUpdateSec = 10;
+  static workerInfoUpdateSec = 30;
 
-  static requestPayoutSec = 10;
+  static requestPayoutSec = 30;
 
   constructor(workerInfo: types.WorkerInfo, dockerApi: Docker, firebase: FirebaseUtil) {
     this.workerInfo = workerInfo;
@@ -56,9 +56,9 @@ export default class Worker {
       await this.firebase.setWorkerInfo(this.workerInfo);
     }, Worker.workerInfoUpdateSec * 1000);
 
-    // setTimeout(() => {
-    //   this.firebase.listenRequest(this.runJob);
-    // }, 5000);
+    setTimeout(() => {
+      this.firebase.listenRequest(this.runJob);
+    }, 5000);
 
     setInterval(this.requestToPayout, Worker.requestPayoutSec * 1000);
   }

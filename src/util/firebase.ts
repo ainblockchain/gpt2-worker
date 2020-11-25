@@ -103,6 +103,7 @@ export default class FirebaseUtil {
       params: {
         address: this.getAddress(),
         workerName: this.workerName,
+        jobType: constants.MODEL_NAME,
       },
     }, dbpath, 'SET_VALUE');
     await this.firebase.getInstance().functions()

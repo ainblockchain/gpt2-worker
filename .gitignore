@@ -127,3 +127,4 @@ node_modules
 sockets
 config.yaml
 temp
+azure_init.sh
