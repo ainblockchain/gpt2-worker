@@ -58,9 +58,9 @@ export default class Worker {
 
     setTimeout(() => {
       this.firebase.listenRequest(this.runJob);
-    }, 5000);
+    }, 1000 * 60);
 
-    setInterval(this.requestToPayout, Worker.requestPayoutSec * 1000);
+    // setInterval(this.requestToPayout, Worker.requestPayoutSec * 1000);
   }
 
   /**
@@ -103,7 +103,7 @@ export default class Worker {
       signature_name: 'predict',
       instances: [vector],
     } : {
-      num_samples: input.data.num_samples,
+      num_samples: input.data.numResultsRequest,
       length: input.data.length,
       text: vector,
     };

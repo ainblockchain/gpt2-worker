@@ -59,12 +59,13 @@ export default class FirebaseUtil {
         if (!data.exists()) return;
         const requestId = data.key as string;
         const value = data.val();
-        const dbpath = `/inference_result/${requestId}`;
+        const rootDbpath = `/inference_result/${requestId}`;
         const snap = await this.firebase.getInstance().database()
-          .ref(dbpath).once('value');
+          .ref(rootDbpath).once('value');
         if (snap.exists()) { // already has response
           return;
         }
+        const dbpath = `/inference_result/${requestId}/${this.workerName}@${this.wallet.getAddress()}`;
         let result;
         try {
           result = {
