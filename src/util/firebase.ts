@@ -60,41 +60,42 @@ export default class Firebase {
   public listenRequest(method: Function) {
     this.app.database()
       .ref(`/inference/${constants.WORKER_NAME}@${this.wallet.getAddress()}`)
-      .on('child_added', async (data) => {
-        if (!data.exists()) return;
-        const requestId = data.key as string;
-        const value = data.val();
-        const rootDbpath = `/inference_result/${requestId}`;
-        const snap = await this.app.database()
-          .ref(rootDbpath).once('value');
-        if (snap.exists()) { // already has response
-          return;
-        }
-        const dbpath = `/inference_result/${requestId}/${constants.WORKER_NAME}@${this.wallet.getAddress()}`;
-        let result;
-        try {
-          result = {
-            statusCode: constants.statusCode.Success,
-            result: await method(requestId, value),
-          };
-        } catch (e) {
-          result = {
-            statusCode: constants.statusCode.Failed,
-            errMessage: String(e),
-          };
-        }
+      .on('child_added', this.inferenceHandler(method));
+  }
 
-        await this.response({
-          ...result,
-          updatedAt: Date.now(),
-          params: {
-            ...value.params,
-            address: this.getAddress(),
-            requestId,
-            workerName: constants.WORKER_NAME,
-          },
-        }, dbpath);
-      });
+  private inferenceHandler = (method: Function) => async (data: firebase.database.DataSnapshot) => {
+    if (!data.exists()) return;
+    const requestId = data.key as string;
+    const value = data.val();
+    const rootDbpath = `/inference_result/${requestId}`;
+    const snap = await this.app.database()
+      .ref(rootDbpath).once('value');
+    if (snap.exists()) { // already has response
+      return;
+    }
+    const dbpath = `/inference_result/${requestId}/${constants.WORKER_NAME}@${this.wallet.getAddress()}`;
+    let result;
+    try {
+      result = {
+        statusCode: constants.statusCode.Success,
+        result: await method(requestId, value),
+      };
+    } catch (e) {
+      result = {
+        statusCode: constants.statusCode.Failed,
+        errMessage: String(e),
+      };
+    }
+    await this.response({
+      ...result,
+      updatedAt: Date.now(),
+      params: {
+        ...value.params,
+        address: this.getAddress(),
+        requestId,
+        workerName: constants.WORKER_NAME,
+      },
+    }, dbpath);
   }
 
   /**
@@ -109,7 +110,7 @@ export default class Firebase {
       params: {
         address: this.getAddress(),
         workerName: constants.WORKER_NAME,
-        jobType: constants.MODEL_NAME,
+        jobType: workerInfo.jobType,
       },
     }, dbpath, 'SET_VALUE');
     await this.app.functions()
@@ -138,5 +139,9 @@ export default class Firebase {
 
   public getTimestamp() {
     return firebase.database.ServerValue.TIMESTAMP;
+  }
+
+  public getApp() {
+    return this.app;
   }
 }
