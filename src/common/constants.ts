@@ -26,10 +26,8 @@ export const {
   WORKER_NAME,
   MNEMONIC,
   MODEL_NAME,
-  JOB_PORT,
   GPU_DEVICE_NUMBER,
   ETH_ADDRESS,
-  TEST,
 } = process.env;
 
 export const MAX_IMAGE_COUNT = 2;
@@ -39,10 +37,12 @@ export const statusCode = {
 };
 
 export const NODE_ENV = process.env.NODE_ENV || 'prod';
+export const JOB_PORT = process.env.JOB_PORT || '7777';
 
 export const modelInfo: types.ModelInfo = {
   'gpt-2-large-length-1': {
     apiPath: '/v1/models/gpt-2-large:predict',
+    healthCheckPath: '/v1/models/gpt-2-large',
     method: 'post',
     imagePath: 'gkswjdzz/gpt-2-large-length-1',
     port: 8501,
@@ -50,6 +50,7 @@ export const modelInfo: types.ModelInfo = {
   },
   'gpt-2-large-torch-serving': {
     apiPath: '/predictions/gpt2-large',
+    healthCheckPath: '/ping',
     method: 'post',
     imagePath: 'gkswjdzz/gpt-2-large-torch-serving',
     port: 8080,
@@ -62,10 +63,15 @@ export const payoutPoolAddr = '0x07B0bd9b3583Ec5864807cfD768733A250301a07'; // t
 export const THRESHOLD_AMOUNT = 1000; // temp
 
 export const validateConstants = () => {
-  if (!WORKER_NAME || !MNEMONIC || !ETH_ADDRESS || !MODEL_NAME
-    || !modelInfo[MODEL_NAME] || !GPU_DEVICE_NUMBER
-    || !['prod', 'staging'].includes(NODE_ENV) || !JOB_PORT) {
-    return false;
+  if (!WORKER_NAME) {
+    throw new Error('"WORKER_NAME" Does not Exist.');
+  } else if (!ETH_ADDRESS) {
+    throw new Error('"ETH_ADDRESS" Does not Exist.');
+  } else if (!MODEL_NAME || !modelInfo[MODEL_NAME]) {
+    throw new Error(`Invalid "MODEL_NAME":${MODEL_NAME} - ${Object.keys(modelInfo)}`);
+  } else if (!GPU_DEVICE_NUMBER) {
+    throw new Error('"GPU_DEVICE_NUMBER" Does not Exist. (ex. 0)');
+  } else if (!['prod', 'staging'].includes(NODE_ENV)) {
+    throw new Error(`Invalid NODE_ENV:${NODE_ENV} - [prod, staging]`);
   }
-  return true;
 };
