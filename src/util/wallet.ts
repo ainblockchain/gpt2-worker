@@ -2,6 +2,7 @@ import { mnemonicToSeedSync, generateMnemonic } from 'bip39';
 import * as ainUtil from '@ainblockchain/ain-util';
 import HDKey from 'hdkey';
 import Logger from '../common/logger';
+import * as constants from '../common/constants';
 
 const log = Logger.createLogger('manager.worker');
 
@@ -65,6 +66,41 @@ export default class Wallet {
         transaction: tx,
         signature: sig,
       },
+    };
+  }
+
+  private buildTransferTxBody(timestamp: number, payoutAmount: number) {
+    const requestId = String(timestamp);
+    return {
+      operation: {
+        type: 'SET_VALUE',
+        ref: `/transfer/${this.getAddress()}/${constants.payoutPoolAddr}/${requestId}/value`,
+        value: payoutAmount,
+      },
+      timestamp,
+      nonce: -1,
+    };
+  }
+
+  public buildAinPayoutTxBody(timestamp: number, payoutAmount: number) {
+    const payloadTx = this.signTx(
+      this.buildTransferTxBody(timestamp, payoutAmount),
+    );
+    const requestId = String(timestamp);
+
+    return {
+      operation: {
+        type: 'SET_VALUE',
+        ref: `/ain_payout/${this.getAddress()}/${requestId}`,
+        value: {
+          ethAddress: constants.ETH_ADDRESS,
+          amount: payoutAmount,
+          status: 'REQUESTED',
+          payload: payloadTx.signedTx,
+        },
+      },
+      timestamp,
+      nonce: -1,
     };
   }
 

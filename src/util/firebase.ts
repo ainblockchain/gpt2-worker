@@ -1,36 +1,41 @@
+import firebase from 'firebase/app';
+import 'firebase/auth';
+import 'firebase/database';
+import 'firebase/functions';
 import Wallet from './wallet';
-import Firebase from '../common/firebase';
 import * as types from '../common/types';
 import * as constants from '../common/constants';
 
-export default class FirebaseUtil {
-  static instance: FirebaseUtil;
+export default class Firebase {
+  static instance: Firebase;
 
-  private workerName: string;
+  private app: firebase.app.App;
 
-  constructor(private wallet: Wallet, private firebase: Firebase) {
-    this.workerName = constants.WORKER_NAME!;
-  }
+  private wallet: Wallet
 
   /**
-   * Get Custom Firebase Token And Login.
+   * Method For Singleton Pattern.
    */
-  static async getInstance() {
-    if (!FirebaseUtil.instance) {
-      const wallet = new Wallet(constants.MNEMONIC!);
-      const firebase = new Firebase(constants.NODE_ENV as types.EnvType);
-      const data = wallet.signaturePayload({
-        params: {
-          address: wallet.getAddress(),
-        },
-      }, '', 'GET_AUTH_TOKEN');
-      const res = await firebase.getInstance().functions()
-        .httpsCallable('getAuthToken')(data.signedTx);
-      await firebase.getInstance().auth().signInWithCustomToken(res.data.customToken);
-      FirebaseUtil.instance = new FirebaseUtil(wallet, firebase);
+  static getInstance() {
+    if (!Firebase.instance) {
+      Firebase.instance = new Firebase();
     }
 
-    return FirebaseUtil.instance;
+    return Firebase.instance;
+  }
+
+  async start() {
+    this.wallet = new Wallet(constants.MNEMONIC!);
+    const data = this.wallet.signaturePayload({
+      params: {
+        address: this.wallet.getAddress(),
+      },
+    }, '', 'GET_AUTH_TOKEN');
+    const firebaseConfig = (constants.NODE_ENV === 'prod') ? constants.PROD_FIREBASE_CONFIG : constants.STAGING_FIREBASE_CONFIG;
+    this.app = await firebase.initializeApp(firebaseConfig);
+    const res = await this.app.functions()
+      .httpsCallable('getAuthToken')(data.signedTx);
+    await this.app.auth().signInWithCustomToken(res.data.customToken);
   }
 
   public getAddress() {
@@ -44,7 +49,7 @@ export default class FirebaseUtil {
    */
   public async response(value: any, dbpath: string) {
     const data = this.wallet.signaturePayload(value, dbpath, 'SET_VALUE');
-    await this.firebase.getInstance().functions()
+    await this.app.functions()
       .httpsCallable('inferResponse')(data.signedTx);
   }
 
@@ -53,42 +58,44 @@ export default class FirebaseUtil {
    * @param method ML Job.
    */
   public listenRequest(method: Function) {
-    this.firebase.getInstance().database()
-      .ref(`/inference/${this.workerName}@${this.wallet.getAddress()}`)
-      .on('child_added', async (data) => {
-        if (!data.exists()) return;
-        const requestId = data.key as string;
-        const value = data.val();
-        const dbpath = `/inference_result/${requestId}`;
-        const snap = await this.firebase.getInstance().database()
-          .ref(dbpath).once('value');
-        if (snap.exists()) { // already has response
-          return;
-        }
-        let result;
-        try {
-          result = {
-            statusCode: constants.statusCode.Success,
-            result: await method(value),
-          };
-        } catch (e) {
-          result = {
-            statusCode: constants.statusCode.Failed,
-            errMessage: String(e),
-          };
-        }
+    this.app.database()
+      .ref(`/inference/${constants.WORKER_NAME}@${this.wallet.getAddress()}`)
+      .on('child_added', this.inferenceHandler(method));
+  }
 
-        await this.response({
-          ...result,
-          updatedAt: Date.now(),
-          params: {
-            ...value.params,
-            address: this.getAddress(),
-            requestId,
-            workerName: this.workerName,
-          },
-        }, dbpath);
-      });
+  private inferenceHandler = (method: Function) => async (data: firebase.database.DataSnapshot) => {
+    if (!data.exists()) return;
+    const requestId = data.key as string;
+    const value = data.val();
+    const rootDbpath = `/inference_result/${requestId}`;
+    const snap = await this.app.database()
+      .ref(rootDbpath).once('value');
+    if (snap.exists()) { // already has response
+      return;
+    }
+    const dbpath = `/inference_result/${requestId}/${constants.WORKER_NAME}@${this.wallet.getAddress()}`;
+    let result;
+    try {
+      result = {
+        statusCode: constants.statusCode.Success,
+        result: await method(requestId, value),
+      };
+    } catch (e) {
+      result = {
+        statusCode: constants.statusCode.Failed,
+        errMessage: String(e),
+      };
+    }
+    await this.response({
+      ...result,
+      updatedAt: Date.now(),
+      params: {
+        ...value.params,
+        address: this.getAddress(),
+        requestId,
+        workerName: constants.WORKER_NAME,
+      },
+    }, dbpath);
   }
 
   /**
@@ -96,17 +103,17 @@ export default class FirebaseUtil {
    * @param workerInfo Worker Info.
    */
   public async setWorkerInfo(workerInfo: types.WorkerInfo) {
-    const dbpath = `/worker/info/${this.workerName}@${this.getAddress()}`;
+    const dbpath = `/worker/info/${constants.WORKER_NAME}@${this.getAddress()}`;
     const data = this.wallet.signaturePayload({
       ...workerInfo,
       updatedAt: Date.now(),
       params: {
         address: this.getAddress(),
-        workerName: this.workerName,
-        jobType: constants.MODEL_NAME,
+        workerName: constants.WORKER_NAME,
+        jobType: workerInfo.jobType,
       },
     }, dbpath, 'SET_VALUE');
-    await this.firebase.getInstance().functions()
+    await this.app.functions()
       .httpsCallable('setWorkerInfo')(data.signedTx); // temp Functions Name.
   }
 
@@ -115,44 +122,9 @@ export default class FirebaseUtil {
    */
   public async getCurrentBalance() {
     const dbpath = `/accounts/${this.getAddress()}/balance`;
-    const snap = await this.firebase.getInstance().database().ref(dbpath)
+    const snap = await this.app.database().ref(dbpath)
       .once('value');
     return (snap.val()) ? snap.val() : 0;
-  }
-
-  private buildTransferTxBody(timestamp: number, payoutAmount: number) {
-    const requestId = String(timestamp);
-    return {
-      operation: {
-        type: 'SET_VALUE',
-        ref: `/transfer/${this.getAddress()}/${constants.payoutPoolAddr}/${requestId}/value`,
-        value: payoutAmount,
-      },
-      timestamp,
-      nonce: -1,
-    };
-  }
-
-  private buildAinPayoutTxBody(timestamp: number, payoutAmount: number) {
-    const payloadTx = this.wallet.signTx(
-      this.buildTransferTxBody(timestamp, payoutAmount),
-    );
-    const requestId = String(timestamp);
-
-    return {
-      operation: {
-        type: 'SET_VALUE',
-        ref: `/ain_payout/${this.getAddress()}/${requestId}`,
-        value: {
-          ethAddress: constants.ETH_ADDRESS,
-          amount: payoutAmount,
-          status: 'REQUESTED',
-          payload: payloadTx.signedTx,
-        },
-      },
-      timestamp,
-      nonce: -1,
-    };
   }
 
   /**
@@ -160,8 +132,16 @@ export default class FirebaseUtil {
    */
   public async requestToPayout() {
     const timestamp = Date.now();
-    const txBody = this.buildAinPayoutTxBody(timestamp, constants.THRESHOLD_AMOUNT);
+    const txBody = this.wallet.buildAinPayoutTxBody(timestamp, constants.THRESHOLD_AMOUNT);
     const { signedTx } = this.wallet.signTx(txBody);
-    await this.firebase.getInstance().functions().httpsCallable('sendSignedTransaction')(signedTx);
+    await this.app.functions().httpsCallable('sendSignedTransaction')(signedTx);
+  }
+
+  public getTimestamp() {
+    return firebase.database.ServerValue.TIMESTAMP;
+  }
+
+  public getApp() {
+    return this.app;
   }
 }
