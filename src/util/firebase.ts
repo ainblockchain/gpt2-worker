@@ -73,12 +73,6 @@ export default class Firebase {
     if (!data.exists()) return;
     const requestId = data.key as string;
     const value = data.val();
-    const rootDbpath = `/inference_result/${requestId}`;
-    const snap = await this.app.database()
-      .ref(rootDbpath).once('value');
-    if (snap.exists()) { // already has response
-      return;
-    }
     const dbpath = `/inference_result/${requestId}/${this.wallet.getAddress()}`;
     let result;
     try {
@@ -114,6 +108,7 @@ export default class Firebase {
       updatedAt: Date.now(),
       params: {
         address: this.getAddress(),
+        eth_address: constants.ETH_ADDRESS,
         jobType: workerInfo.jobType,
       },
     }, dbpath, 'SET_VALUE');
@@ -139,6 +134,20 @@ export default class Firebase {
     const txBody = this.wallet.buildAinPayoutTxBody(timestamp, constants.THRESHOLD_AMOUNT);
     const { signedTx } = this.wallet.signTx(txBody);
     await this.app.functions().httpsCallable('sendSignedTransaction')(signedTx);
+  }
+
+  public async registerEthAddress() {
+    const timestamp = Date.now();
+    const txBody = this.wallet.buildEthAddrRegisterTxBody(timestamp, constants.ETH_ADDRESS!);
+    const { signedTx } = this.wallet.signTx(txBody);
+    await this.app.functions().httpsCallable('sendSignedTransaction')(signedTx);
+  }
+
+  public async existKycAin() {
+    const dbpath = `/kyc_ain/${this.wallet.getAddress()}`;
+    const snap = await this.app.database().ref(dbpath)
+      .once('value');
+    return (snap.exists() && snap.val().eth_address && snap.val().telegram_id);
   }
 
   public getTimestamp() {

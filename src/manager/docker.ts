@@ -60,11 +60,12 @@ export default class Docker {
         },
       },
     });
-    await container.start()
-      .catch(async (err) => {
-        await container.remove({ force: true });
-        throw err;
-      });
+    try {
+      await container.start();
+    } catch (err) {
+      await container.remove({ force: true });
+      throw err;
+    }
   }
 
   /**

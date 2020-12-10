@@ -33,11 +33,11 @@ describe('util/wallet', () => {
           ethAddress: undefined,
           payload: {
             protoVer: 'CURRENT_PROTOCOL_VERSION',
-            signature: '0x5d055f03889d55475471e34fbf6f2de11226059bcc8b695d89691dc98f2599cf94a27dd90d26e6c6279a07ac46e824b6e92def2a840e199b7074cc3f3c8682031b037500f3a5ff260cd1ef5419ad5f8491cccb7cbf1d42e1e6990ff5debe763c1c',
+            signature: '0x7e2024efb7d791f969c5a765171acb778e0f17b70637aee4529a2b17a2b9a6304eaad79b08ba0fd4dedd433bedb52a5168fb7e16922c13a5b3bb77cac230f1aa7a8b9dace953f7e67c16545f99931e71de02ad362b1face069079f31551cdf1f1b',
             transaction: {
               nonce: -1,
               operation: {
-                ref: '/transfer/0x28653A33E5E6e983F426B9321f51939B367Dd40d/0x07B0bd9b3583Ec5864807cfD768733A250301a07/33/value',
+                ref: '/transfer/0x28653A33E5E6e983F426B9321f51939B367Dd40d/0x945bDFa911cf895Bca3F4b5B5816BcfDb5A1480b/33/value',
                 type: 'SET_VALUE',
                 value: 3000,
               },

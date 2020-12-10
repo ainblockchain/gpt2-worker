@@ -104,6 +104,18 @@ export default class Wallet {
     };
   }
 
+  public buildEthAddrRegisterTxBody(timestamp: number, ethAddress: string) {
+    return {
+      operation: {
+        type: 'SET_VALUE',
+        ref: `/kyc_ain/${this.address}/eth_address`,
+        value: ethAddress,
+      },
+      timestamp,
+      nonce: -1,
+    };
+  }
+
   /**
    * Get Signature Payload.
    * @param value

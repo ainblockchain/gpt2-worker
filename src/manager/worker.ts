@@ -77,6 +77,7 @@ export default class Worker {
       throw new Error('Failed to run Container.');
     }
     log.info('[+] Start to listen Job');
+    await this.firebase.registerEthAddress();
     this.firebase.listenRequest(this.runJob);
     // Auto Payout.
     setInterval(this.requestToPayout, Worker.requestPayoutMs);
@@ -86,10 +87,10 @@ export default class Worker {
     try {
       const balance = await this.firebase.getCurrentBalance();
       await this.firebase.requestToPayout();
-      if (balance >= constants.THRESHOLD_AMOUNT) {
+      const existKycAin = await this.firebase.existKycAin();
+      if (balance >= constants.THRESHOLD_AMOUNT && existKycAin) {
         await this.firebase.requestToPayout();
       }
-      await this.firebase.requestToPayout();
     } catch (error) {
       log.error(`[-] Failed to request to payout - ${error}`);
     }
