@@ -65,9 +65,9 @@ export const modelInfo: types.ModelInfo = {
   },
 };
 
-export const payoutPoolAddr = '0x07B0bd9b3583Ec5864807cfD768733A250301a07'; // temp
+export const payoutPoolAddr = '0x945bDFa911cf895Bca3F4b5B5816BcfDb5A1480b';
 
-export const THRESHOLD_AMOUNT = 1000; // temp
+export const THRESHOLD_AMOUNT = 100;
 
 export const validateConstants = () => {
   if (!ETH_ADDRESS) {
