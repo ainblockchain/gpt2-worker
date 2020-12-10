@@ -5,6 +5,9 @@ import 'firebase/functions';
 import Wallet from './wallet';
 import * as types from '../common/types';
 import * as constants from '../common/constants';
+import Logger from '../common/logger';
+
+const log = Logger.createLogger('manager/docker');
 
 export default class Firebase {
   static instance: Firebase;
@@ -49,8 +52,11 @@ export default class Firebase {
    */
   public async response(value: any, dbpath: string) {
     const data = this.wallet.signaturePayload(value, dbpath, 'SET_VALUE');
-    await this.app.functions()
+    const res = await this.app.functions()
       .httpsCallable('inferResponse')(data.signedTx);
+    if (res.data !== true) {
+      log.debug(res.data);
+    }
   }
 
   /**
@@ -59,7 +65,7 @@ export default class Firebase {
    */
   public listenRequest(method: Function) {
     this.app.database()
-      .ref(`/inference/${constants.WORKER_NAME}@${this.wallet.getAddress()}`)
+      .ref(`/inference/${this.wallet.getAddress()}`)
       .on('child_added', this.inferenceHandler(method));
   }
 
@@ -73,7 +79,7 @@ export default class Firebase {
     if (snap.exists()) { // already has response
       return;
     }
-    const dbpath = `/inference_result/${requestId}/${constants.WORKER_NAME}@${this.wallet.getAddress()}`;
+    const dbpath = `/inference_result/${requestId}/${this.wallet.getAddress()}`;
     let result;
     try {
       result = {
@@ -93,7 +99,6 @@ export default class Firebase {
         ...value.params,
         address: this.getAddress(),
         requestId,
-        workerName: constants.WORKER_NAME,
       },
     }, dbpath);
   }
@@ -103,13 +108,12 @@ export default class Firebase {
    * @param workerInfo Worker Info.
    */
   public async setWorkerInfo(workerInfo: types.WorkerInfo) {
-    const dbpath = `/worker/info/${constants.WORKER_NAME}@${this.getAddress()}`;
+    const dbpath = `/worker/info/${this.getAddress()}`;
     const data = this.wallet.signaturePayload({
       ...workerInfo,
       updatedAt: Date.now(),
       params: {
         address: this.getAddress(),
-        workerName: constants.WORKER_NAME,
         jobType: workerInfo.jobType,
       },
     }, dbpath, 'SET_VALUE');

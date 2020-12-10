@@ -23,7 +23,6 @@ export const STAGING_FIREBASE_CONFIG = {
 };
 
 export const {
-  WORKER_NAME,
   MNEMONIC,
   MODEL_NAME,
   GPU_DEVICE_NUMBER,
@@ -56,6 +55,14 @@ export const modelInfo: types.ModelInfo = {
     port: 8080,
     framework: 'pytorch',
   },
+  'gpt-2-trump-torch-serving': {
+    apiPath: '/predictions/gpt2-trump',
+    healthCheckPath: '/ping',
+    method: 'post',
+    imagePath: 'gkswjdzz/gpt-2-trump-torch-serving',
+    port: 8080,
+    framework: 'pytorch',
+  },
 };
 
 export const payoutPoolAddr = '0x07B0bd9b3583Ec5864807cfD768733A250301a07'; // temp
@@ -63,9 +70,7 @@ export const payoutPoolAddr = '0x07B0bd9b3583Ec5864807cfD768733A250301a07'; // t
 export const THRESHOLD_AMOUNT = 1000; // temp
 
 export const validateConstants = () => {
-  if (!WORKER_NAME) {
-    throw new Error('"WORKER_NAME" Does not Exist.');
-  } else if (!ETH_ADDRESS) {
+  if (!ETH_ADDRESS) {
     throw new Error('"ETH_ADDRESS" Does not Exist.');
   } else if (!MODEL_NAME || !modelInfo[MODEL_NAME]) {
     throw new Error(`Invalid "MODEL_NAME":${MODEL_NAME} - ${Object.keys(modelInfo)}`);

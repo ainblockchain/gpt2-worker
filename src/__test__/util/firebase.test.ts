@@ -76,7 +76,6 @@ describe('util/firebase', () => {
         params: {
           address: 'address',
           requestId: 'requestId',
-          workerName: undefined,
         },
         result: {
           output: ['test'],
@@ -113,7 +112,6 @@ describe('util/firebase', () => {
         params: {
           address: 'address',
           jobType: 'model',
-          workerName: undefined,
         },
         updatedAt: result['params'].updatedAt,
       },

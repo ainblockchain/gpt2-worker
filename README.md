@@ -20,15 +20,14 @@
 
 ## 시작
 ```
-yarn
-NODE_ENV={staging or prod} WORKER_NAME={worker_name} MNEMONIC={mnemonic} ETH_ADDRESS={ethereum address} \
- MODEL_NAME={Model Name} GPU_DEVICE_NUMBER={ex. 1} JOB_PORT={(optional, ex) 4040)} yarn start
+yarn MNEMONIC={mnemonic} ETH_ADDRESS={ethereum address} \
+ MODEL_NAME={Model Name} GPU_DEVICE_NUMBER={ex. 1} JOB_PORT={(optional): 4040)}  NODE_ENV={(optional): staging or prod} yarn start
 
 // or
 
 docker run -d --name worker \
- -e NODE_ENV={staging or prod} -e WORKER_NAME={worker_name} -e MNEMONIC={mnemonic} -e ETH_ADDRESS={ethereum address} \
- -e MODEL_NAME={Model Name} -e JOB_PORT={(optional, ex) 4040)  -e GPU_DEVICE_NUMBER={ex. 1} \
+ -e MNEMONIC={mnemonic} -e ETH_ADDRESS={ethereum address} \
+ -e MODEL_NAME={Model Name} -e JOB_PORT={(optional, ex) 4040)  -e GPU_DEVICE_NUMBER={ex. 1}  -e NODE_ENV={(optional): staging or prod} \
  --network host  -v /var/run/docker.sock:/var/run/docker.sock ainblockchain/worker-docker 
 ```
 

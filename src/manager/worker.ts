@@ -47,7 +47,6 @@ export default class Worker {
     this.dockerApi = dockerApi;
     log.info(`[+] Start Worker [
       Worker Address: ${this.firebase.getAddress()}
-      Worker Name: ${constants.WORKER_NAME} 
       Model Name: ${constants.MODEL_NAME}
     ]`);
 
@@ -60,7 +59,9 @@ export default class Worker {
 
     // Update Worker Information on Database.
     setInterval(async () => {
-      await this.firebase.setWorkerInfo(this.workerInfo);
+      await this.firebase.setWorkerInfo({
+        jobType: constants.MODEL_NAME!,
+      });
     }, Worker.workerInfoUpdateMs);
 
     let health = false;
