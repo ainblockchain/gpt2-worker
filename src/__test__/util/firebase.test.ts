@@ -71,7 +71,7 @@ describe('util/firebase', () => {
       output: ['test'],
     }))(input as any);
     expect(result).toEqual({
-      dppath: '/inference_result/requestId/undefined@address',
+      dppath: '/inference_result/requestId/address',
       params: {
         params: {
           address: 'address',
@@ -106,7 +106,7 @@ describe('util/firebase', () => {
       jobType: 'model',
     });
     expect(result).toEqual({
-      dbpath: '/worker/info/undefined@address',
+      dbpath: '/worker/info/address',
       params: {
         jobType: 'model',
         params: {
