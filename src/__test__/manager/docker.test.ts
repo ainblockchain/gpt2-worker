@@ -27,12 +27,20 @@ describe('manager/docker', () => {
         ExposedPorts: { '1000/tcp': {} },
         HostConfig: {
           Binds: [],
+          DeviceRequests: [
+            {
+              Driver: '',
+              Count: 0,
+              DeviceIDs: ['1'],
+              Capabilities: [['gpu']],
+              Options: {},
+            },
+          ],
           PortBindings: {
             '1000/tcp': [{
               HostPort: '1000',
             }],
           },
-          Runtime: 'nvidia',
         },
         Image: 'image',
         name: 'name',
