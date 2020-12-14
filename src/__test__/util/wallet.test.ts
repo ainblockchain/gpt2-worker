@@ -44,32 +44,32 @@ describe('util/wallet', () => {
   });
 
   it('buildTransferTxBody', () => {
-    const result = wallet.buildAinPayoutTxBody(33, 3000);
+    const result = wallet.buildAinPayoutTxBody(1607950998346, 3000);
     expect(result).toEqual({
       nonce: -1,
       operation: {
-        ref: '/ain_payout/0xA0DE48734f4759df97327a98da7a48241173CA78/33',
+        ref: '/ain_payout/0xA0DE48734f4759df97327a98da7a48241173CA78/1607950998346',
         type: 'SET_VALUE',
         value: {
           amount: 3000,
           ethAddress: result.operation.value.ethAddress,
           payload: {
             protoVer: constants.CURRENT_PROTOCOL_VERSION,
-            signature: '0x958277b887469d302b1ebf84ca79613dd34af4dad33c451ab3022b04cd799ce029b854902214265783cb71651fbe0934dcff617b1194d6b141d3ecbada8e05365da81a74e2af38f36316d99e5bf1267e5a5273d58d795a2c52f157dbc36465581c',
+            signature: '0x5ec02f0e14e17337208d52e2524b0af8fa5700cade3375cbd74addcb08d089a1ee96c6b8858ba116132a8afabd7aeb37debd8f25d7ea40295aa87931beaf2fdd76ebb3c1a39d1c03ec2eebce969e44c96e7fd5b67e7d6cdaf809eb87a6b0089d1b',
             tx_body: {
               nonce: -1,
               operation: {
-                ref: '/transfer/0xA0DE48734f4759df97327a98da7a48241173CA78/0x945bDFa911cf895Bca3F4b5B5816BcfDb5A1480b/33/value',
+                ref: '/transfer/0xA0DE48734f4759df97327a98da7a48241173CA78/0x945bDFa911cf895Bca3F4b5B5816BcfDb5A1480b/1607950998346/value',
                 type: 'SET_VALUE',
                 value: 3000,
               },
-              timestamp: 33,
+              timestamp: 1607950998346,
             },
           },
           status: 'REQUESTED',
         },
       },
-      timestamp: 33,
+      timestamp: 1607950998346,
     });
   });
 

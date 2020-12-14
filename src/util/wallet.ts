@@ -54,10 +54,10 @@ export default class Wallet {
 
   /**
    * Sign Transaction.
-   * @param tx
+   * @param txBody
    */
-  public signTx(tx: ainUtil.TransactionBody) {
-    const sig = ainUtil.ecSignTransaction(tx, this.privateKey);
+  public signTx(txBody: ainUtil.TransactionBody) {
+    const sig = ainUtil.ecSignTransaction(txBody, this.privateKey);
     const sigBuffer = ainUtil.toBuffer(sig);
     const lenHash = sigBuffer.length - 65;
     const hashedData = sigBuffer.slice(0, lenHash);
@@ -66,7 +66,7 @@ export default class Wallet {
       txHash,
       signedTx: {
         protoVer: constants.CURRENT_PROTOCOL_VERSION,
-        tx_body: tx,
+        tx_body: txBody,
         signature: sig,
       },
     };
