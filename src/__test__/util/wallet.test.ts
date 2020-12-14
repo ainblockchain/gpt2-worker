@@ -31,7 +31,7 @@ describe('util/wallet', () => {
         type: 'SET_VALUE',
         value: {
           amount: 3000,
-          ethAddress: undefined,
+          ethAddress: result.operation.value.ethAddress,
           payload: {
             protoVer: constants.CURRENT_PROTOCOL_VERSION,
             signature: '0x7e2024efb7d791f969c5a765171acb778e0f17b70637aee4529a2b17a2b9a6304eaad79b08ba0fd4dedd433bedb52a5168fb7e16922c13a5b3bb77cac230f1aa7a8b9dace953f7e67c16545f99931e71de02ad362b1face069079f31551cdf1f1b',

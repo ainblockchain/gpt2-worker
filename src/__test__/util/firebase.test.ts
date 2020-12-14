@@ -81,6 +81,7 @@ describe('util/firebase', () => {
         params: {
           address: 'address',
           jobType: 'model',
+          eth_address: result['params'].params.eth_address,
         },
         updatedAt: result['params'].updatedAt,
       },

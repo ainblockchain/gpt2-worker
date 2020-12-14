@@ -128,3 +128,4 @@ sockets
 config.yaml
 temp
 azure_init.sh
+env.json

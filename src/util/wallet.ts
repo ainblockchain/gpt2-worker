@@ -1,6 +1,7 @@
 import { mnemonicToSeedSync, generateMnemonic } from 'bip39';
 import * as ainUtil from '@ainblockchain/ain-util';
 import HDKey from 'hdkey';
+import * as fs from 'fs';
 import Logger from '../common/logger';
 import * as constants from '../common/constants';
 
@@ -21,6 +22,11 @@ export default class Wallet {
     if (!mnemonic) {
       this.mnemonic = generateMnemonic();
       log.info(`[+] Create mnemonic: ${this.mnemonic}`);
+      const newEnv = {
+        ...constants.ENV,
+        MNEMONIC: this.mnemonic,
+      };
+      fs.writeFileSync('./env.json', JSON.stringify(newEnv));
     } else {
       this.mnemonic = mnemonic;
     }

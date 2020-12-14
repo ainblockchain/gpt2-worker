@@ -1,4 +1,7 @@
+import * as fs from 'fs';
 import * as types from './types';
+
+const env = JSON.parse(String(fs.readFileSync('./env.json')));
 
 export const PROD_FIREBASE_CONFIG = {
   apiKey: 'AIzaSyA_ss5fiOD6bckPQk7qnb_Ruwd29OVWXE8',
@@ -27,7 +30,9 @@ export const {
   MODEL_NAME,
   GPU_DEVICE_NUMBER,
   ETH_ADDRESS,
-} = process.env;
+} = env;
+
+export const ENV = env;
 
 export const MAX_IMAGE_COUNT = 2;
 export const statusCode = {
@@ -35,8 +40,8 @@ export const statusCode = {
   Failed: 1,
 };
 
-export const NODE_ENV = process.env.NODE_ENV || 'prod';
-export const JOB_PORT = process.env.JOB_PORT || '7777';
+export const NODE_ENV = env.NODE_ENV || 'prod';
+export const JOB_PORT = env.JOB_PORT || '7777';
 
 export const modelInfo: types.ModelInfo = {
   'gpt-2-large-length-1': {
@@ -72,11 +77,11 @@ export const THRESHOLD_AMOUNT = 100;
 export const CURRENT_PROTOCOL_VERSION = '0.5.0';
 
 export const validateConstants = () => {
-  if (!ETH_ADDRESS) {
+  if (!ETH_ADDRESS || ETH_ADDRESS === '') {
     throw new Error('"ETH_ADDRESS" Does not Exist.');
   } else if (!MODEL_NAME || !modelInfo[MODEL_NAME]) {
     throw new Error(`Invalid "MODEL_NAME":${MODEL_NAME} - ${Object.keys(modelInfo)}`);
-  } else if (!GPU_DEVICE_NUMBER) {
+  } else if (!GPU_DEVICE_NUMBER || GPU_DEVICE_NUMBER === '') {
     throw new Error('"GPU_DEVICE_NUMBER" Does not Exist. (ex. 0)');
   } else if (!['prod', 'staging'].includes(NODE_ENV)) {
     throw new Error(`Invalid NODE_ENV:${NODE_ENV} - [prod, staging]`);
