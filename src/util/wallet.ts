@@ -2,49 +2,46 @@ import { mnemonicToSeedSync, generateMnemonic } from 'bip39';
 import * as ainUtil from '@ainblockchain/ain-util';
 import HDKey from 'hdkey';
 import * as fs from 'fs';
-import Logger from '../common/logger';
 import * as constants from '../common/constants';
 
-const log = Logger.createLogger('manager.worker');
-
 export default class Wallet {
-  private wallet: any;
-
-  private mnemonic: string;
-
   private secretKey: string;
 
   private address: string;
 
-  private privateKey: string;
+  private privateKey: Buffer;
 
-  constructor(mnemonic?: string) {
-    if (!mnemonic) {
-      this.mnemonic = generateMnemonic();
-      log.info(`[+] Create mnemonic: ${this.mnemonic}`);
-      const newEnv = {
-        ...constants.ENV,
-        MNEMONIC: this.mnemonic,
-      };
-      fs.truncateSync('./env.json', 0);
-      fs.appendFileSync('./env.json', JSON.stringify(newEnv));
+  private publicKey: Buffer;
+
+  constructor(keystore?: ainUtil.V3Keystore, testPassword?: string) {
+    if (!keystore) {
+      const keys = HDKey.fromMasterSeed(mnemonicToSeedSync(generateMnemonic()))
+        .derive("m/44'/412'/0'/0/0"); /* default wallet address for AIN */
+      this.privateKey = keys.privateKey;
+      this.publicKey = keys.publicKey;
+      if (!testPassword) {
+        const newEnv = {
+          ...constants.ENV,
+          KET_STORE: ainUtil.privateToV3Keystore(this.privateKey, constants.PASSWORD),
+        };
+        fs.truncateSync('./env.json', 0);
+        fs.appendFileSync('./env.json', JSON.stringify(newEnv));
+      }
     } else {
-      this.mnemonic = mnemonic;
+      this.privateKey = ainUtil.v3KeystoreToPrivate(keystore, constants.PASSWORD || testPassword);
+      this.publicKey = ainUtil.privateToPublic(this.privateKey);
     }
 
-    const key = HDKey.fromMasterSeed(mnemonicToSeedSync(this.mnemonic));
-    this.wallet = key.derive("m/44'/412'/0'/0/0"); /* default wallet address for AIN */
-    this.privateKey = this.wallet.privateKey;
-    this.secretKey = `0x${this.wallet.privateKey.toString('hex')}`;
-    this.address = ainUtil.toChecksumAddress(`0x${ainUtil.pubToAddress(this.wallet.publicKey, true).toString('hex')}`);
+    this.secretKey = `0x${this.privateKey.toString('hex')}`;
+    this.address = ainUtil.toChecksumAddress(`0x${ainUtil.pubToAddress(this.publicKey, true).toString('hex')}`);
   }
 
-  public getWallet() {
-    return this.wallet;
+  public getPrivateKey() {
+    return this.privateKey;
   }
 
-  public getMnemonic() {
-    return this.mnemonic;
+  public getPublicKey() {
+    return this.publicKey;
   }
 
   public getSecretKey() {
@@ -60,8 +57,7 @@ export default class Wallet {
    * @param tx
    */
   public signTx(tx: ainUtil.TransactionBody) {
-    const keyBuffer = Buffer.from(this.privateKey, 'hex');
-    const sig = ainUtil.ecSignTransaction(tx, keyBuffer);
+    const sig = ainUtil.ecSignTransaction(tx, this.privateKey);
     const sigBuffer = ainUtil.toBuffer(sig);
     const lenHash = sigBuffer.length - 65;
     const hashedData = sigBuffer.slice(0, lenHash);

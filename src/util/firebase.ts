@@ -28,7 +28,7 @@ export default class Firebase {
   }
 
   async start() {
-    this.wallet = new Wallet(constants.MNEMONIC!);
+    this.wallet = new Wallet(constants.KET_STORE!);
     const data = this.wallet.signaturePayload({
       params: {
         address: this.wallet.getAddress(),
