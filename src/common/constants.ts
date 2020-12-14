@@ -69,6 +69,8 @@ export const payoutPoolAddr = '0x945bDFa911cf895Bca3F4b5B5816BcfDb5A1480b';
 
 export const THRESHOLD_AMOUNT = 100;
 
+export const CURRENT_PROTOCOL_VERSION = '0.5.0';
+
 export const validateConstants = () => {
   if (!ETH_ADDRESS) {
     throw new Error('"ETH_ADDRESS" Does not Exist.');

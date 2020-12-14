@@ -62,8 +62,8 @@ export default class Wallet {
     return {
       txHash,
       signedTx: {
-        protoVer: 'CURRENT_PROTOCOL_VERSION',
-        transaction: tx,
+        protoVer: constants.CURRENT_PROTOCOL_VERSION,
+        tx_body: tx,
         signature: sig,
       },
     };

@@ -1,4 +1,5 @@
 import Wallet from '../../util/wallet';
+import * as constants from '../../common/constants';
 
 const mnemonic = 'onion spot come parent agree zoo quote harbor swift awake smart thank';
 const address = '0x28653A33E5E6e983F426B9321f51939B367Dd40d';
@@ -32,9 +33,9 @@ describe('util/wallet', () => {
           amount: 3000,
           ethAddress: undefined,
           payload: {
-            protoVer: 'CURRENT_PROTOCOL_VERSION',
+            protoVer: constants.CURRENT_PROTOCOL_VERSION,
             signature: '0x7e2024efb7d791f969c5a765171acb778e0f17b70637aee4529a2b17a2b9a6304eaad79b08ba0fd4dedd433bedb52a5168fb7e16922c13a5b3bb77cac230f1aa7a8b9dace953f7e67c16545f99931e71de02ad362b1face069079f31551cdf1f1b',
-            transaction: {
+            tx_body: {
               nonce: -1,
               operation: {
                 ref: '/transfer/0x28653A33E5E6e983F426B9321f51939B367Dd40d/0x945bDFa911cf895Bca3F4b5B5816BcfDb5A1480b/33/value',
@@ -57,16 +58,16 @@ describe('util/wallet', () => {
     );
     expect(result).toEqual({
       signedTx: {
-        protoVer: 'CURRENT_PROTOCOL_VERSION',
+        protoVer: constants.CURRENT_PROTOCOL_VERSION,
         signature: result.signedTx.signature,
-        transaction: {
+        tx_body: {
           nonce: -1,
           operation: {
             ref: 'worker/',
             type: 'SET_VALUE',
             value: '1',
           },
-          timestamp: result.signedTx.transaction.timestamp,
+          timestamp: result.signedTx.tx_body.timestamp,
         },
       },
       txHash: result.txHash,
