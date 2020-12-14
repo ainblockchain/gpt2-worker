@@ -26,7 +26,8 @@ export default class Wallet {
         ...constants.ENV,
         MNEMONIC: this.mnemonic,
       };
-      fs.writeFileSync('./env.json', JSON.stringify(newEnv));
+      fs.truncateSync('./env.json', 0);
+      fs.appendFileSync('./env.json', JSON.stringify(newEnv));
     } else {
       this.mnemonic = mnemonic;
     }

@@ -4,14 +4,14 @@ import * as types from './types';
 const env = JSON.parse(String(fs.readFileSync('./env.json')));
 
 export const PROD_FIREBASE_CONFIG = {
-  apiKey: 'AIzaSyA_ss5fiOD6bckPQk7qnb_Ruwd29OVWXE8',
-  authDomain: 'gpt2-ainetwork.firebaseapp.com',
-  databaseURL: 'https://gpt2-ainetwork.firebaseio.com',
-  projectId: 'gpt2-ainetwork',
-  storageBucket: 'gpt2-ainetwork.appspot.com',
-  messagingSenderId: '1045334268091',
-  appId: '1:1045334268091:web:c0490dfa3e8057a078f19e',
-  measurementId: 'G-8NBD57K71C',
+  apiKey: 'AIzaSyCaNna60wsEWDYhAleGVj5jjp3-24GCtN0',
+  authDomain: 'gpt2-ainetwork-prod.firebaseapp.com',
+  databaseURL: 'https://gpt2-ainetwork-prod.firebaseio.com',
+  projectId: 'gpt2-ainetwork-prod',
+  storageBucket: 'gpt2-ainetwork-prod.appspot.com',
+  messagingSenderId: '983388933112',
+  appId: '1:983388933112:web:a199871d763bcdb59e240d',
+  measurementId: 'G-CMS0JDQQB6',
 };
 
 export const STAGING_FIREBASE_CONFIG = {
@@ -42,6 +42,7 @@ export const statusCode = {
 
 export const NODE_ENV = env.NODE_ENV || 'prod';
 export const JOB_PORT = env.JOB_PORT || '7777';
+export const ENABLE_AUTH_PAYOUT = env.ENABLE_AUTH_PAYOUT || 'true';
 
 export const modelInfo: types.ModelInfo = {
   'gpt-2-large-length-1': {

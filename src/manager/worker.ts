@@ -79,8 +79,10 @@ export default class Worker {
     log.info('[+] Start to listen Job');
     await this.firebase.registerEthAddress();
     this.firebase.listenRequest(this.runJob);
-    // Auto Payout.
-    setInterval(this.requestToPayout, Worker.requestPayoutMs);
+    if (constants.ENABLE_AUTH_PAYOUT === 'true') {
+      // Auto Payout.
+      setInterval(this.requestToPayout, Worker.requestPayoutMs);
+    }
   }
 
   public requestToPayout = async () => {
