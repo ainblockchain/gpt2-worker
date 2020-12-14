@@ -25,7 +25,7 @@ export default class Wallet {
           KET_STORE: ainUtil.privateToV3Keystore(this.privateKey, constants.PASSWORD),
         };
         fs.truncateSync('./env.json', 0);
-        fs.appendFileSync('./env.json', JSON.stringify(newEnv));
+        fs.appendFileSync('./env.json', JSON.stringify(newEnv, null, 2));
       }
     } else {
       this.privateKey = ainUtil.v3KeystoreToPrivate(keystore, constants.PASSWORD || testPassword);
