@@ -86,7 +86,7 @@ export const validateConstants = () => {
   } else if (!GPU_DEVICE_NUMBER || GPU_DEVICE_NUMBER === '') {
     throw new Error('"GPU_DEVICE_NUMBER" Does not Exist. (ex. 0)');
   } else if (!PASSWORD || PASSWORD === '') {
-    throw new Error('"GPU_DEVICE_NUMBER" Does not Exist. (ex. 0)');
+    throw new Error('"PASSWORD" Does not Exist. (ex. 0)');
   } else if (!['prod', 'staging'].includes(NODE_ENV)) {
     throw new Error(`Invalid NODE_ENV:${NODE_ENV} - [prod, staging]`);
   }

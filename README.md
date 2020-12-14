@@ -24,6 +24,7 @@
   "ETH_ADDRESS": "", // 출금하기 위한 이더리움 주소 (ex. 0x~)
   "MODEL_NAME": "", // 추론 모델 이름 (ex. gpt-2-trump-torch-serving)
   "GPU_DEVICE_NUMBER": "" // GPU 장치 번호로, nvidia-smi를 통해 GPU 장치 번호를 확인한다. ex 1
+  "PASSWORD": "" // AIN 지갑에 대한 비밀번호
 }
 ```
 - 해당 정보를 JSON 파일로 저장을 한다.(env.json)
