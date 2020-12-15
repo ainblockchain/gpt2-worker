@@ -7,32 +7,33 @@ import * as constants from '../common/constants';
 export default class Wallet {
   private secretKey: string;
 
-  private address: string;
-
   private privateKey: Buffer;
+
+  private address: string;
 
   private publicKey: Buffer;
 
-  constructor(keystore?: ainUtil.V3Keystore, testPassword?: string) {
-    if (!keystore) {
+  constructor(secretKey?: string, test?: boolean) {
+    if (!secretKey) {
       const keys = HDKey.fromMasterSeed(mnemonicToSeedSync(generateMnemonic()))
         .derive("m/44'/412'/0'/0/0"); /* default wallet address for AIN */
       this.privateKey = keys.privateKey;
-      this.publicKey = keys.publicKey;
-      if (!testPassword) {
+      this.publicKey = ainUtil.privateToPublic(this.privateKey);
+      this.secretKey = `0x${keys.privateKey.toString('hex')}`;
+      if (!test) {
         const newEnv = {
           ...constants.ENV,
-          KET_STORE: ainUtil.privateToV3Keystore(this.privateKey, constants.PASSWORD),
+          PRIVATE_KEY: this.secretKey,
         };
-        fs.truncateSync('./env.json', 0);
-        fs.appendFileSync('./env.json', JSON.stringify(newEnv, null, 2));
+        fs.truncateSync(constants.ENV_PATH, 0);
+        fs.appendFileSync(constants.ENV_PATH, JSON.stringify(newEnv, null, 2));
       }
     } else {
-      this.privateKey = ainUtil.v3KeystoreToPrivate(keystore, constants.PASSWORD || testPassword);
+      this.secretKey = secretKey;
+      this.privateKey = ainUtil.toBuffer(this.secretKey);
       this.publicKey = ainUtil.privateToPublic(this.privateKey);
     }
 
-    this.secretKey = `0x${this.privateKey.toString('hex')}`;
     this.address = ainUtil.toChecksumAddress(`0x${ainUtil.pubToAddress(this.publicKey, true).toString('hex')}`);
   }
 

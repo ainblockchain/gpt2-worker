@@ -1,45 +1,27 @@
 import Wallet from '../../util/wallet';
 import * as constants from '../../common/constants';
 
-const keystore = {
-  version: 3 as 3,
-  id: '54129241-38a5-4d9b-bf91-b89ffe835557',
-  address: 'a0de48734f4759df97327a98da7a48241173ca78',
-  crypto: {
-    ciphertext: '590962730e560ce6cfd1c7158143e2db8149f70325bb0aeda4430710561c8665',
-    cipherparams: { iv: 'cf91fcca6a269c9dd735612b02fcbdd8' },
-    cipher: 'aes-128-ctr',
-    kdf: 'scrypt',
-    kdfparams: {
-      dklen: 32,
-      salt: '69a9d1a5f759433d7b961c9641248bbc4c0ac55b5a5e8fc9ee8a448874da2de0',
-      n: 262144,
-      r: 8,
-      p: 1,
-    },
-    mac: 'dfcd2e0dd93fa9ce8c60e581358af3b88741026ac6b9a7a1d4785eeee636ef3c',
-  },
-};
-const password = 'comcom';
-const wallet = new Wallet(keystore, password);
+const privateKey = '0x5c0007bc424332798b2c077e54bb6fe334749781c88f6f9abba3e9724b13e471';
+const address = '0x9d035EFC3F50B259B970EF737167243B08f9f7c0';
+const wallet = new Wallet(privateKey, true);
 
 describe('util/wallet', () => {
   it('getAddress', () => {
     const result = wallet.getAddress();
-    expect(result).toEqual('0xA0DE48734f4759df97327a98da7a48241173CA78');
+    expect(result).toEqual(address);
   });
 
   it('getPrivateKey', () => {
     const result = wallet.getPrivateKey();
     expect(result.toString('hex')).toEqual(
-      '1b85b823974ad8d1c1a2039b6617a196353fb05e987c8a8a64466a215ddc51dd',
+      '5c0007bc424332798b2c077e54bb6fe334749781c88f6f9abba3e9724b13e471',
     );
   });
 
   it('getPublicKey', () => {
     const result = wallet.getPublicKey();
     expect(result.toString('hex')).toEqual(
-      '77e50647fb8692c2257f58e40bf070a71884ee4d76e6b52431adbd1001fc7e00fa1e4fa7e069005816f65f36943756637e948661e4503b82fb72c0a6e8327406',
+      '1f8ccb98fb87d26b5f42b1fbf5ac33ec246afb5a5b8dfba1602cb4930855bc8abf0f371f8ae02bd3a5f9a0284e2ae176903f387a0e0b289373b46176224894be',
     );
   });
 
@@ -48,18 +30,18 @@ describe('util/wallet', () => {
     expect(result).toEqual({
       nonce: -1,
       operation: {
-        ref: '/ain_payout/0xA0DE48734f4759df97327a98da7a48241173CA78/1607950998346',
+        ref: `/ain_payout/${address}/1607950998346`,
         type: 'SET_VALUE',
         value: {
           amount: 3000,
           ethAddress: result.operation.value.ethAddress,
           payload: {
             protoVer: constants.CURRENT_PROTOCOL_VERSION,
-            signature: '0x5ec02f0e14e17337208d52e2524b0af8fa5700cade3375cbd74addcb08d089a1ee96c6b8858ba116132a8afabd7aeb37debd8f25d7ea40295aa87931beaf2fdd76ebb3c1a39d1c03ec2eebce969e44c96e7fd5b67e7d6cdaf809eb87a6b0089d1b',
+            signature: '0x2cfeeb0bd561f1dbdef67d3256f56f1a1fe806f5d4db4c4b3cd64f803eb6791de45c1e581652f2a6d7de05e19c89602f28b1191001d933caf5b66a35a3833bb444f628a866f1278db32dec29c163f3b63903e9ae1defd288520de59afd85942b1c',
             tx_body: {
               nonce: -1,
               operation: {
-                ref: '/transfer/0xA0DE48734f4759df97327a98da7a48241173CA78/0x945bDFa911cf895Bca3F4b5B5816BcfDb5A1480b/1607950998346/value',
+                ref: `/transfer/${address}/0x945bDFa911cf895Bca3F4b5B5816BcfDb5A1480b/1607950998346/value`,
                 type: 'SET_VALUE',
                 value: 3000,
               },
