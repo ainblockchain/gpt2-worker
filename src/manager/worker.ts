@@ -23,7 +23,7 @@ export default class Worker {
 
   static workerInfoUpdateMs = 30 * 1000; // 30s
 
-  static requestPayoutMs = 30 * 1000; // 30s
+  static requestPayoutMs = 10 * 60 * 1000;
 
   static healthChechMacCnt = 100;
 
@@ -88,7 +88,6 @@ export default class Worker {
   public requestToPayout = async () => {
     try {
       const balance = await this.firebase.getCurrentBalance();
-      await this.firebase.requestToPayout();
       const existKycAin = await this.firebase.existKycAin();
       if (balance >= constants.THRESHOLD_AMOUNT && existKycAin) {
         await this.firebase.requestToPayout();
