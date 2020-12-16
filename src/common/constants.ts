@@ -1,4 +1,5 @@
 import * as fs from 'fs';
+import { isValidAddress } from '@ainblockchain/ain-util';
 import * as types from './types';
 
 export const ENV_PATH = './env.json';
@@ -80,8 +81,8 @@ export const THRESHOLD_AMOUNT = 100;
 export const CURRENT_PROTOCOL_VERSION = '0.5.0';
 
 export const validateConstants = () => {
-  if (!ETH_ADDRESS || ETH_ADDRESS === '') {
-    throw new Error('"ETH_ADDRESS" Does not Exist.');
+  if (!ETH_ADDRESS || !isValidAddress(ETH_ADDRESS)) {
+    throw new Error(`Invalid "ETH_ADDRESS" - ${ETH_ADDRESS}`);
   } else if (!MODEL_NAME || !modelInfo[MODEL_NAME]) {
     throw new Error(`Invalid "MODEL_NAME":${MODEL_NAME} - ${Object.keys(modelInfo)}`);
   } else if (!GPU_DEVICE_NUMBER || GPU_DEVICE_NUMBER === '') {
