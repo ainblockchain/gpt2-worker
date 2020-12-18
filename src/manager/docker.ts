@@ -22,7 +22,7 @@ export default class Docker {
     return Docker.instance;
   }
 
-  async isNvidiaDocker() {
+  async isRuntimesNvidia() {
     try {
       const dockerInfo = await this.dockerode.info();
       return !!dockerInfo.Runtimes.nvidia;
@@ -44,7 +44,6 @@ export default class Docker {
     deviceNumber: string, externalPort: string, internalPost: string) {
     // Pull Docker Image.
     await this.pullImage(image);
-
     const container = await this.dockerode.createContainer({
       name,
       ExposedPorts: {
@@ -53,18 +52,27 @@ export default class Docker {
       Env: [`NVIDIA_VISIBLE_DEVICES=${deviceNumber}`],
       Image: image,
       HostConfig: {
-        Runtime: 'nvidia',
         Binds: [],
         PortBindings: {
           [`${internalPost}/tcp`]: [{ HostPort: externalPort }],
         },
+        DeviceRequests: [
+          {
+            Driver: '',
+            Count: 0,
+            DeviceIDs: [String(deviceNumber)],
+            Capabilities: [['gpu']],
+            Options: {},
+          },
+        ],
       },
     });
-    await container.start()
-      .catch(async (err) => {
-        await container.remove({ force: true });
-        throw err;
-      });
+    try {
+      await container.start();
+    } catch (err) {
+      await container.remove({ force: true });
+      throw err;
+    }
   }
 
   /**

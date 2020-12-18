@@ -11,10 +11,6 @@ program.command('serve').action(async () => {
   try {
     constants.validateConstants();
     const dockerApi = Docker.getInstance();
-    if (!dockerApi.isNvidiaDocker()) {
-      log.error('[-] Not NVIDIA Docker.');
-      return;
-    }
     const firebase = Firebase.getInstance();
     await firebase.start();
     const worker = Worker.getInstance();

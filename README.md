@@ -18,19 +18,27 @@
 ./imagePath.sh
 ```
 
+## 준비
+```
+{
+  "ETH_ADDRESS": "", // 출금하기 위한 이더리움 주소 (ex. 0x~)
+  "MODEL_NAME": "", // 추론 모델 이름 (ex. gpt-2-trump-torch-serving)
+  "GPU_DEVICE_NUMBER": "" // GPU 장치 번호로, nvidia-smi를 통해 GPU 장치 번호를 확인한다. ex 1
+}
+```
+- 해당 정보를 JSON 파일로 저장을 한다.(env.json)
+
 ## 시작
 ```
-yarn
-NODE_ENV={staging or prod} WORKER_NAME={worker_name} MNEMONIC={mnemonic} ETH_ADDRESS={ethereum address} \
- MODEL_NAME={Model Name} GPU_DEVICE_NUMBER={ex. 1} JOB_PORT={(optional, ex) 4040)} yarn start
+yarn start
 
 // or
 
 docker run -d --name worker \
- -e NODE_ENV={staging or prod} -e WORKER_NAME={worker_name} -e MNEMONIC={mnemonic} -e ETH_ADDRESS={ethereum address} \
- -e MODEL_NAME={Model Name} -e JOB_PORT={(optional, ex) 4040)  -e GPU_DEVICE_NUMBER={ex. 1} \
- --network host  -v /var/run/docker.sock:/var/run/docker.sock ainblockchain/worker-docker 
+ -v {env.json PATH}:/server/env.json -v /var/run/docker.sock:/var/run/docker.sock \
+ --network host ainblockchain/worker-docker 
 ```
+
 
 ## 로그
 ```

@@ -8,37 +8,6 @@ describe('util/firebase', () => {
     sinon.restore();
   });
 
-  it('inferenceHandler: Request that have already been completed', async () => {
-    (firebase as any).app = {
-      database: (_: Object) => ({
-        ref: () => ({
-          once: () => ({
-            exists: () => true,
-          }),
-        }),
-      }),
-    };
-
-    const result = {};
-    sinon.stub(firebase, 'response' as any)
-      .callsFake(async (params: Object, dppath: string) => {
-        result['params'] = params;
-        result['dppath'] = dppath;
-      });
-
-    const input = {
-      exists: () => true,
-      key: 'requestId',
-      val: () => ({
-        output: ['test'],
-      }),
-    };
-    await (firebase as any).inferenceHandler(() => ({
-      output: ['test'],
-    }))(input as any);
-    expect(result).toEqual({});
-  });
-
   it('inferenceHandler: Unprocessed Request', async () => {
     (firebase as any).app = {
       database: (_: Object) => ({
@@ -71,12 +40,11 @@ describe('util/firebase', () => {
       output: ['test'],
     }))(input as any);
     expect(result).toEqual({
-      dppath: '/inference_result/requestId/undefined@address',
+      dppath: '/inference_result/requestId/address',
       params: {
         params: {
           address: 'address',
           requestId: 'requestId',
-          workerName: undefined,
         },
         result: {
           output: ['test'],
@@ -107,13 +75,13 @@ describe('util/firebase', () => {
       jobType: 'model',
     });
     expect(result).toEqual({
-      dbpath: '/worker/info/undefined@address',
+      dbpath: '/worker/info/address',
       params: {
         jobType: 'model',
         params: {
           address: 'address',
           jobType: 'model',
-          workerName: undefined,
+          eth_address: result['params'].params.eth_address,
         },
         updatedAt: result['params'].updatedAt,
       },

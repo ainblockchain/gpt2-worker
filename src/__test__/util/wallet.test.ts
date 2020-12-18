@@ -1,9 +1,9 @@
 import Wallet from '../../util/wallet';
+import * as constants from '../../common/constants';
 
-const mnemonic = 'onion spot come parent agree zoo quote harbor swift awake smart thank';
-const address = '0x28653A33E5E6e983F426B9321f51939B367Dd40d';
-const getSecretKey = '0x50623bc1a119ce804294f2faf704713193311ed6889ff368c96cc9fc3096327d';
-const wallet = new Wallet(mnemonic);
+const privateKey = '0x5c0007bc424332798b2c077e54bb6fe334749781c88f6f9abba3e9724b13e471';
+const address = '0x9d035EFC3F50B259B970EF737167243B08f9f7c0';
+const wallet = new Wallet(privateKey, true);
 
 describe('util/wallet', () => {
   it('getAddress', () => {
@@ -11,43 +11,47 @@ describe('util/wallet', () => {
     expect(result).toEqual(address);
   });
 
-  it('getMnemonic', () => {
-    const result = wallet.getMnemonic();
-    expect(result).toEqual(mnemonic);
+  it('getPrivateKey', () => {
+    const result = wallet.getPrivateKey();
+    expect(result.toString('hex')).toEqual(
+      '5c0007bc424332798b2c077e54bb6fe334749781c88f6f9abba3e9724b13e471',
+    );
   });
 
-  it('getSecretKey', () => {
-    const result = wallet.getSecretKey();
-    expect(result).toEqual(getSecretKey);
+  it('getPublicKey', () => {
+    const result = wallet.getPublicKey();
+    expect(result.toString('hex')).toEqual(
+      '1f8ccb98fb87d26b5f42b1fbf5ac33ec246afb5a5b8dfba1602cb4930855bc8abf0f371f8ae02bd3a5f9a0284e2ae176903f387a0e0b289373b46176224894be',
+    );
   });
 
   it('buildTransferTxBody', () => {
-    const result = wallet.buildAinPayoutTxBody(33, 3000);
+    const result = wallet.buildAinPayoutTxBody(1607950998346, 3000);
     expect(result).toEqual({
       nonce: -1,
       operation: {
-        ref: '/ain_payout/0x28653A33E5E6e983F426B9321f51939B367Dd40d/33',
+        ref: `/ain_payout/${address}/1607950998346`,
         type: 'SET_VALUE',
         value: {
           amount: 3000,
-          ethAddress: undefined,
+          ethAddress: result.operation.value.ethAddress,
           payload: {
-            protoVer: 'CURRENT_PROTOCOL_VERSION',
-            signature: '0x5d055f03889d55475471e34fbf6f2de11226059bcc8b695d89691dc98f2599cf94a27dd90d26e6c6279a07ac46e824b6e92def2a840e199b7074cc3f3c8682031b037500f3a5ff260cd1ef5419ad5f8491cccb7cbf1d42e1e6990ff5debe763c1c',
-            transaction: {
+            protoVer: constants.CURRENT_PROTOCOL_VERSION,
+            signature: '0x2cfeeb0bd561f1dbdef67d3256f56f1a1fe806f5d4db4c4b3cd64f803eb6791de45c1e581652f2a6d7de05e19c89602f28b1191001d933caf5b66a35a3833bb444f628a866f1278db32dec29c163f3b63903e9ae1defd288520de59afd85942b1c',
+            tx_body: {
               nonce: -1,
               operation: {
-                ref: '/transfer/0x28653A33E5E6e983F426B9321f51939B367Dd40d/0x07B0bd9b3583Ec5864807cfD768733A250301a07/33/value',
+                ref: `/transfer/${address}/0x945bDFa911cf895Bca3F4b5B5816BcfDb5A1480b/1607950998346/value`,
                 type: 'SET_VALUE',
                 value: 3000,
               },
-              timestamp: 33,
+              timestamp: 1607950998346,
             },
           },
           status: 'REQUESTED',
         },
       },
-      timestamp: 33,
+      timestamp: 1607950998346,
     });
   });
 
@@ -57,16 +61,16 @@ describe('util/wallet', () => {
     );
     expect(result).toEqual({
       signedTx: {
-        protoVer: 'CURRENT_PROTOCOL_VERSION',
+        protoVer: constants.CURRENT_PROTOCOL_VERSION,
         signature: result.signedTx.signature,
-        transaction: {
+        tx_body: {
           nonce: -1,
           operation: {
             ref: 'worker/',
             type: 'SET_VALUE',
             value: '1',
           },
-          timestamp: result.signedTx.transaction.timestamp,
+          timestamp: result.signedTx.tx_body.timestamp,
         },
       },
       txHash: result.txHash,

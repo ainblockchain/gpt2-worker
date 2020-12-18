@@ -23,7 +23,7 @@ export default class Worker {
 
   static workerInfoUpdateMs = 30 * 1000; // 30s
 
-  static requestPayoutMs = 30 * 1000; // 30s
+  static requestPayoutMs = 10 * 60 * 1000;
 
   static healthChechMacCnt = 100;
 
@@ -47,7 +47,6 @@ export default class Worker {
     this.dockerApi = dockerApi;
     log.info(`[+] Start Worker [
       Worker Address: ${this.firebase.getAddress()}
-      Worker Name: ${constants.WORKER_NAME} 
       Model Name: ${constants.MODEL_NAME}
     ]`);
 
@@ -60,7 +59,9 @@ export default class Worker {
 
     // Update Worker Information on Database.
     setInterval(async () => {
-      await this.firebase.setWorkerInfo(this.workerInfo);
+      await this.firebase.setWorkerInfo({
+        jobType: constants.MODEL_NAME!,
+      });
     }, Worker.workerInfoUpdateMs);
 
     let health = false;
@@ -76,19 +77,21 @@ export default class Worker {
       throw new Error('Failed to run Container.');
     }
     log.info('[+] Start to listen Job');
+    await this.firebase.registerEthAddress();
     this.firebase.listenRequest(this.runJob);
-    // Auto Payout.
-    setInterval(this.requestToPayout, Worker.requestPayoutMs);
+    if (constants.ENABLE_AUTO_PAYOUT === 'true') {
+      // Auto Payout.
+      setInterval(this.requestToPayout, Worker.requestPayoutMs);
+    }
   }
 
   public requestToPayout = async () => {
     try {
       const balance = await this.firebase.getCurrentBalance();
-      await this.firebase.requestToPayout();
-      if (balance >= constants.THRESHOLD_AMOUNT) {
+      const existKycAin = await this.firebase.existKycAin();
+      if (balance >= constants.THRESHOLD_AMOUNT && existKycAin) {
         await this.firebase.requestToPayout();
       }
-      await this.firebase.requestToPayout();
     } catch (error) {
       log.error(`[-] Failed to request to payout - ${error}`);
     }

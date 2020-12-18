@@ -1,43 +1,49 @@
 import { mnemonicToSeedSync, generateMnemonic } from 'bip39';
 import * as ainUtil from '@ainblockchain/ain-util';
 import HDKey from 'hdkey';
-import Logger from '../common/logger';
+import * as fs from 'fs';
 import * as constants from '../common/constants';
 
-const log = Logger.createLogger('manager.worker');
-
 export default class Wallet {
-  private wallet: any;
-
-  private mnemonic: string;
-
   private secretKey: string;
+
+  private privateKey: Buffer;
 
   private address: string;
 
-  private privateKey: string;
+  private publicKey: Buffer;
 
-  constructor(mnemonic?: string) {
-    if (!mnemonic) {
-      this.mnemonic = generateMnemonic();
-      log.info(`[+] Create mnemonic: ${this.mnemonic}`);
+  constructor(secretKey?: string, test?: boolean) {
+    if (!secretKey) {
+      const keys = HDKey.fromMasterSeed(mnemonicToSeedSync(generateMnemonic()))
+        .derive("m/44'/412'/0'/0/0"); /* default wallet address for AIN */
+      this.privateKey = keys.privateKey;
+      this.publicKey = ainUtil.privateToPublic(this.privateKey);
+      this.secretKey = `0x${keys.privateKey.toString('hex')}`;
+      this.address = ainUtil.toChecksumAddress(`0x${ainUtil.pubToAddress(this.publicKey, true).toString('hex')}`);
+      if (!test) {
+        const newEnv = {
+          ...constants.ENV,
+          AIN_PRIVATE_KEY: this.secretKey,
+          AIN_ADDRESS: this.address,
+        };
+        fs.truncateSync(constants.ENV_PATH, 0);
+        fs.appendFileSync(constants.ENV_PATH, JSON.stringify(newEnv, null, 2));
+      }
     } else {
-      this.mnemonic = mnemonic;
+      this.secretKey = secretKey;
+      this.privateKey = ainUtil.toBuffer(this.secretKey);
+      this.publicKey = ainUtil.privateToPublic(this.privateKey);
+      this.address = ainUtil.toChecksumAddress(`0x${ainUtil.pubToAddress(this.publicKey, true).toString('hex')}`);
     }
-
-    const key = HDKey.fromMasterSeed(mnemonicToSeedSync(this.mnemonic));
-    this.wallet = key.derive("m/44'/412'/0'/0/0"); /* default wallet address for AIN */
-    this.privateKey = this.wallet.privateKey;
-    this.secretKey = `0x${this.wallet.privateKey.toString('hex')}`;
-    this.address = ainUtil.toChecksumAddress(`0x${ainUtil.pubToAddress(this.wallet.publicKey, true).toString('hex')}`);
   }
 
-  public getWallet() {
-    return this.wallet;
+  public getPrivateKey() {
+    return this.privateKey;
   }
 
-  public getMnemonic() {
-    return this.mnemonic;
+  public getPublicKey() {
+    return this.publicKey;
   }
 
   public getSecretKey() {
@@ -50,11 +56,10 @@ export default class Wallet {
 
   /**
    * Sign Transaction.
-   * @param tx
+   * @param txBody
    */
-  public signTx(tx: ainUtil.TransactionBody) {
-    const keyBuffer = Buffer.from(this.privateKey, 'hex');
-    const sig = ainUtil.ecSignTransaction(tx, keyBuffer);
+  public signTx(txBody: ainUtil.TransactionBody) {
+    const sig = ainUtil.ecSignTransaction(txBody, this.privateKey);
     const sigBuffer = ainUtil.toBuffer(sig);
     const lenHash = sigBuffer.length - 65;
     const hashedData = sigBuffer.slice(0, lenHash);
@@ -62,8 +67,8 @@ export default class Wallet {
     return {
       txHash,
       signedTx: {
-        protoVer: 'CURRENT_PROTOCOL_VERSION',
-        transaction: tx,
+        protoVer: constants.CURRENT_PROTOCOL_VERSION,
+        tx_body: txBody,
         signature: sig,
       },
     };
@@ -98,6 +103,18 @@ export default class Wallet {
           status: 'REQUESTED',
           payload: payloadTx.signedTx,
         },
+      },
+      timestamp,
+      nonce: -1,
+    };
+  }
+
+  public buildEthAddrRegisterTxBody(timestamp: number, ethAddress: string) {
+    return {
+      operation: {
+        type: 'SET_VALUE',
+        ref: `/kyc_ain/${this.address}/eth_address`,
+        value: ethAddress,
       },
       timestamp,
       nonce: -1,

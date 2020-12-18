@@ -5,6 +5,9 @@ import 'firebase/functions';
 import Wallet from './wallet';
 import * as types from '../common/types';
 import * as constants from '../common/constants';
+import Logger from '../common/logger';
+
+const log = Logger.createLogger('manager/docker');
 
 export default class Firebase {
   static instance: Firebase;
@@ -25,7 +28,7 @@ export default class Firebase {
   }
 
   async start() {
-    this.wallet = new Wallet(constants.MNEMONIC!);
+    this.wallet = new Wallet(constants.AIN_PRIVATE_KEY);
     const data = this.wallet.signaturePayload({
       params: {
         address: this.wallet.getAddress(),
@@ -49,8 +52,11 @@ export default class Firebase {
    */
   public async response(value: any, dbpath: string) {
     const data = this.wallet.signaturePayload(value, dbpath, 'SET_VALUE');
-    await this.app.functions()
+    const res = await this.app.functions()
       .httpsCallable('inferResponse')(data.signedTx);
+    if (res.data !== true) {
+      log.debug(res.data);
+    }
   }
 
   /**
@@ -59,7 +65,7 @@ export default class Firebase {
    */
   public listenRequest(method: Function) {
     this.app.database()
-      .ref(`/inference/${constants.WORKER_NAME}@${this.wallet.getAddress()}`)
+      .ref(`/inference/${this.wallet.getAddress()}`)
       .on('child_added', this.inferenceHandler(method));
   }
 
@@ -67,13 +73,7 @@ export default class Firebase {
     if (!data.exists()) return;
     const requestId = data.key as string;
     const value = data.val();
-    const rootDbpath = `/inference_result/${requestId}`;
-    const snap = await this.app.database()
-      .ref(rootDbpath).once('value');
-    if (snap.exists()) { // already has response
-      return;
-    }
-    const dbpath = `/inference_result/${requestId}/${constants.WORKER_NAME}@${this.wallet.getAddress()}`;
+    const dbpath = `/inference_result/${requestId}/${this.wallet.getAddress()}`;
     let result;
     try {
       result = {
@@ -93,7 +93,6 @@ export default class Firebase {
         ...value.params,
         address: this.getAddress(),
         requestId,
-        workerName: constants.WORKER_NAME,
       },
     }, dbpath);
   }
@@ -103,13 +102,13 @@ export default class Firebase {
    * @param workerInfo Worker Info.
    */
   public async setWorkerInfo(workerInfo: types.WorkerInfo) {
-    const dbpath = `/worker/info/${constants.WORKER_NAME}@${this.getAddress()}`;
+    const dbpath = `/worker/info/${this.getAddress()}`;
     const data = this.wallet.signaturePayload({
       ...workerInfo,
       updatedAt: Date.now(),
       params: {
         address: this.getAddress(),
-        workerName: constants.WORKER_NAME,
+        eth_address: constants.ETH_ADDRESS,
         jobType: workerInfo.jobType,
       },
     }, dbpath, 'SET_VALUE');
@@ -135,6 +134,20 @@ export default class Firebase {
     const txBody = this.wallet.buildAinPayoutTxBody(timestamp, constants.THRESHOLD_AMOUNT);
     const { signedTx } = this.wallet.signTx(txBody);
     await this.app.functions().httpsCallable('sendSignedTransaction')(signedTx);
+  }
+
+  public async registerEthAddress() {
+    const timestamp = Date.now();
+    const txBody = this.wallet.buildEthAddrRegisterTxBody(timestamp, constants.ETH_ADDRESS!);
+    const { signedTx } = this.wallet.signTx(txBody);
+    await this.app.functions().httpsCallable('sendSignedTransaction')(signedTx);
+  }
+
+  public async existKycAin() {
+    const dbpath = `/kyc_ain/${this.wallet.getAddress()}`;
+    const snap = await this.app.database().ref(dbpath)
+      .once('value');
+    return (snap.exists() && snap.val().eth_address && snap.val().telegram_id);
   }
 
   public getTimestamp() {
