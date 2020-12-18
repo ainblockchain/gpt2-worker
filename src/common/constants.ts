@@ -32,7 +32,7 @@ export const {
   MODEL_NAME,
   GPU_DEVICE_NUMBER,
   ETH_ADDRESS,
-  PRIVATE_KEY,
+  AIN_PRIVATE_KEY,
 } = env;
 
 export const ENV = env;
@@ -45,7 +45,7 @@ export const statusCode = {
 
 export const NODE_ENV = env.NODE_ENV || 'prod';
 export const JOB_PORT = env.JOB_PORT || '7777';
-export const ENABLE_AUTH_PAYOUT = env.ENABLE_AUTH_PAYOUT || 'true';
+export const ENABLE_AUTO_PAYOUT = env.ENABLE_AUTO_PAYOUT || 'true';
 
 export const modelInfo: types.ModelInfo = {
   'gpt-2-large-length-1': {

@@ -20,10 +20,12 @@ export default class Wallet {
       this.privateKey = keys.privateKey;
       this.publicKey = ainUtil.privateToPublic(this.privateKey);
       this.secretKey = `0x${keys.privateKey.toString('hex')}`;
+      this.address = ainUtil.toChecksumAddress(`0x${ainUtil.pubToAddress(this.publicKey, true).toString('hex')}`);
       if (!test) {
         const newEnv = {
           ...constants.ENV,
-          PRIVATE_KEY: this.secretKey,
+          AIN_PRIVATE_KEY: this.secretKey,
+          AIN_ADDRESS: this.address,
         };
         fs.truncateSync(constants.ENV_PATH, 0);
         fs.appendFileSync(constants.ENV_PATH, JSON.stringify(newEnv, null, 2));
@@ -32,9 +34,8 @@ export default class Wallet {
       this.secretKey = secretKey;
       this.privateKey = ainUtil.toBuffer(this.secretKey);
       this.publicKey = ainUtil.privateToPublic(this.privateKey);
+      this.address = ainUtil.toChecksumAddress(`0x${ainUtil.pubToAddress(this.publicKey, true).toString('hex')}`);
     }
-
-    this.address = ainUtil.toChecksumAddress(`0x${ainUtil.pubToAddress(this.publicKey, true).toString('hex')}`);
   }
 
   public getPrivateKey() {
