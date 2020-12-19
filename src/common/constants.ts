@@ -47,6 +47,8 @@ export const NODE_ENV = env.NODE_ENV || 'prod';
 export const JOB_PORT = env.JOB_PORT || '7777';
 export const ENABLE_AUTO_PAYOUT = env.ENABLE_AUTO_PAYOUT || 'true';
 
+export const START_TIME = Date.now();
+
 export const modelInfo: types.ModelInfo = {
   'gpt-2-large-length-1': {
     apiPath: '/v1/models/gpt-2-large:predict',

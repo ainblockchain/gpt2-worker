@@ -25,9 +25,13 @@ export default class Worker {
 
   static requestPayoutMs = 10 * 60 * 1000;
 
-  static healthChechMacCnt = 100;
+  static healthCheckMaxCnt = 100;
 
   static healthCheckDelayMs = 2000;
+
+  public totalRewardAmount: number;
+
+  public totalPayoutAmount: number;
 
   /**
    * Method For Singleton Pattern.
@@ -43,6 +47,8 @@ export default class Worker {
    * Start Worker.
   */
   async start(firebase: Firebase, dockerApi: Docker) {
+    this.totalRewardAmount = 0;
+    this.totalPayoutAmount = 0;
     this.firebase = firebase;
     this.dockerApi = dockerApi;
     log.info(`[+] Start Worker [
@@ -65,7 +71,7 @@ export default class Worker {
     }, Worker.workerInfoUpdateMs);
 
     let health = false;
-    for (let cnt = 0; cnt < Worker.healthChechMacCnt; cnt += 1) {
+    for (let cnt = 0; cnt < Worker.healthCheckMaxCnt; cnt += 1) {
       health = await this.healthCheckContainer(constants.MODEL_NAME!);
       if (health) {
         break;
@@ -76,6 +82,7 @@ export default class Worker {
       await this.dockerApi.kill(constants.MODEL_NAME!);
       throw new Error('Failed to run Container.');
     }
+    this.firebase.listenTransaction(this.listenTransactionHandler);
     log.info('[+] Start to listen Job');
     await this.firebase.registerEthAddress();
     this.firebase.listenRequest(this.runJob);
@@ -139,5 +146,19 @@ export default class Worker {
     } : {
       predictions: JSON.stringify(res.data),
     };
+  }
+
+  public listenTransactionHandler = (params: types.UserTransactionParams) => {
+    if (params.type === 'REWARD_JOB') {
+      this.totalRewardAmount += params.value;
+      if (constants.START_TIME < params.timestamp) {
+        log.info(`[+] Current AIN Total Reward balance: ${this.totalRewardAmount} ain (+ ${params.value})`);
+      }
+    } else if (params.type === 'PAYOUT_CONFIRMED') {
+      this.totalPayoutAmount += params.value;
+      if (constants.START_TIME < params.timestamp) {
+        log.info(`[+] Current AIN Total Payout balance: ${this.totalPayoutAmount} ain (+ ${params.value})`);
+      }
+    }
   }
 }
