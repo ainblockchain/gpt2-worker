@@ -96,7 +96,7 @@ export default class Wallet {
     return {
       operation: {
         type: 'SET_VALUE',
-        ref: `/ain_payout/${this.getAddress()}/${requestId}`,
+        ref: `/apps/collaborative_ai/ain_payout/${this.getAddress()}/${requestId}`,
         value: {
           ethAddress: constants.ETH_ADDRESS,
           amount: payoutAmount,
@@ -113,7 +113,7 @@ export default class Wallet {
     return {
       operation: {
         type: 'SET_VALUE',
-        ref: `/kyc_ain/${this.address}/eth_address`,
+        ref: `/apps/collaborative_ai/kyc_ain/${this.address}/eth_address`,
         value: ethAddress,
       },
       timestamp,

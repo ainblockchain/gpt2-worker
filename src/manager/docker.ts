@@ -1,7 +1,4 @@
 import Dockerode from 'dockerode';
-import Logger from '../common/logger';
-
-const log = Logger.createLogger('manager/docker');
 
 export default class Docker {
   private static instance: Docker;
@@ -20,16 +17,6 @@ export default class Docker {
       Docker.instance = new Docker();
     }
     return Docker.instance;
-  }
-
-  async isRuntimesNvidia() {
-    try {
-      const dockerInfo = await this.dockerode.info();
-      return !!dockerInfo.Runtimes.nvidia;
-    } catch (err) {
-      log.error(`[-] Failed to get Docker Information - ${err.message}`);
-      return false;
-    }
   }
 
   /**

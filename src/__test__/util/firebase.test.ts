@@ -34,6 +34,9 @@ describe('util/firebase', () => {
       key: 'requestId',
       val: () => ({
         output: ['test'],
+        data: {
+          requestedAt: 9999999999999,
+        },
       }),
     };
     await (firebase as any).inferenceHandler(() => ({

@@ -14,3 +14,11 @@ export type ModelInfo = {
     framework: 'tensorflow' | 'pytorch';
   }
 }
+
+export type UserTransactionParams = {
+  timestamp: number,
+  // eslint-disable-next-line camelcase
+  tx_hash: string,
+  type: string,
+  value: number
+};

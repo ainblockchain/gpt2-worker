@@ -75,6 +75,11 @@ export default class Firebase {
     const value = data.val();
     const dbpath = `/inference_result/${requestId}/${this.wallet.getAddress()}`;
     let result;
+
+    if (value.data.requestedAt < constants.START_TIME) {
+      // @TODO Think about how to handle incoming requests before starting the worker.
+      return;
+    }
     try {
       result = {
         statusCode: constants.statusCode.Success,
@@ -114,6 +119,14 @@ export default class Firebase {
     }, dbpath, 'SET_VALUE');
     await this.app.functions()
       .httpsCallable('setWorkerInfo')(data.signedTx); // temp Functions Name.
+  }
+
+  public listenTransaction(method: (params: types.UserTransactionParams) => void) {
+    this.app.database()
+      .ref(`/user_transactions/${this.wallet.getAddress()}/`)
+      .on('child_added', (snap) => {
+        method(snap.val());
+      });
   }
 
   /**

@@ -30,7 +30,7 @@ describe('util/wallet', () => {
     expect(result).toEqual({
       nonce: -1,
       operation: {
-        ref: `/ain_payout/${address}/1607950998346`,
+        ref: `/apps/collaborative_ai/ain_payout/${address}/1607950998346`,
         type: 'SET_VALUE',
         value: {
           amount: 3000,
