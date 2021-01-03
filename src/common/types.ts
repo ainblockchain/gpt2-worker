@@ -22,3 +22,18 @@ export type UserTransactionParams = {
   type: string,
   value: number
 };
+
+export type InferenceHandlerParams = {
+  data: {
+    inputVector: string,
+    numResultsRequest?: number,
+    length?: number,
+  },
+}
+
+export type KycAinValue = {
+  // eslint-disable-next-line camelcase
+  eth_address: string,
+  // eslint-disable-next-line camelcase
+  telegram_id: string,
+}
