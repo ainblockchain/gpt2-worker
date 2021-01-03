@@ -186,11 +186,12 @@ export default class AinConnect {
   /**
    * Get kyc_ain value.
    */
-  async getKycAin(): Promise<types.KycAinValue> {
-    const snap = await this.app.database()
-      .ref(firebaseInfo.getKycAinPath(this.keyInfo.address))
-      .once('value');
-    return (snap.exists()) ? snap.val() : undefined;
+  async isAinAddressKycVerified(): Promise<boolean> {
+    const res = await this.app.functions()
+      .httpsCallable(firebaseInfo.FUNCTIONS_NAMES.isAinAddressKycVerified)({
+        ainAddress: this.getAddress(),
+      });
+    return res.data.isVerified;
   }
 
   /**

@@ -113,10 +113,8 @@ export default class Worker {
   public requestToPayout = async () => {
     try {
       const balance = await this.ainConnect.getCurrentBalance();
-      const kycAinValue = await this.ainConnect.getKycAin();
-      if (balance >= THRESHOLD_AMOUNT && (
-        kycAinValue.eth_address && kycAinValue.telegram_id
-      )) {
+      const isAinAddressKycVerified = await this.ainConnect.isAinAddressKycVerified();
+      if (balance >= THRESHOLD_AMOUNT && isAinAddressKycVerified) {
         await this.ainConnect.payout(THRESHOLD_AMOUNT);
       }
     } catch (error) {

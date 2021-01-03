@@ -1,42 +1,61 @@
 import * as sinon from 'sinon';
-import Worker from '../../handler/worker';
+import Docker from '../../handler/docker';
 
-describe('handler/worker', () => {
+describe('handler/docker', () => {
+  beforeAll(() => {
+    (Docker as any).pullImage = () => {};
+    (Docker as any).killContainer = () => {};
+  });
+
   afterEach(() => {
     sinon.restore();
   });
 
-  it('requestToPayout', async () => {
-    const worker = new Worker(true);
-    let result = false;
-    (worker as any).ainConnect = {
-      getCurrentBalance: async () => 10000,
-      getKycAin: async () => ({
-        eth_address: 'eth_address',
-        telegram_id: 'telegram_id',
-      }),
-      payout: () => {
-        result = true;
+  it('runContainerWithGpu', async () => {
+    let result;
+    (Docker as any).dockerode = {
+      createContainer: async (createContainerOptions: any) => {
+        result = createContainerOptions;
+        return {
+          start: () => {},
+        };
       },
     };
-    await worker.requestToPayout();
-    expect(true).toEqual(result);
-  });
+    const name = 'containerName';
+    const image = 'imagePath:latest';
+    const gpuDeviceNumber = '2';
+    const publishPorts = {
+      80: '80',
+    };
+    await Docker.runContainerWithGpu(
+      name,
+      image,
+      gpuDeviceNumber,
+      publishPorts,
+    );
 
-  it('requestToPayout [balance < THRESHOLD_AMOUNT]', async () => {
-    const worker = new Worker(true);
-    let result = false;
-    (worker as any).ainConnect = {
-      getCurrentBalance: async () => 10,
-      getKycAin: async () => ({
-        eth_address: 'eth_address',
-        telegram_id: 'telegram_id',
-      }),
-      payout: () => {
-        result = true;
+    expect(result).toEqual({
+      name,
+      ExposedPorts: {
+        [`${publishPorts[80]}/tcp`]: {},
       },
-    };
-    await worker.requestToPayout();
-    expect(false).toEqual(result);
+      Env: [`NVIDIA_VISIBLE_DEVICES=${gpuDeviceNumber}`],
+      Image: image,
+      HostConfig: {
+        AutoRemove: true,
+        PortBindings: {
+          [`${publishPorts[80]}/tcp`]: [{ HostPort: '80' }],
+        },
+        DeviceRequests: [
+          {
+            Driver: '',
+            Count: 0,
+            DeviceIDs: [gpuDeviceNumber],
+            Capabilities: [['gpu']],
+            Options: {},
+          },
+        ],
+      },
+    });
   });
 });

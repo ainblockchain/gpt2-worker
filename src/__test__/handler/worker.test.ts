@@ -1,61 +1,36 @@
 import * as sinon from 'sinon';
-import Docker from '../../handler/docker';
+import Worker from '../../handler/worker';
 
-describe('handler/docker', () => {
-  beforeAll(() => {
-    (Docker as any).pullImage = () => {};
-    (Docker as any).killContainer = () => {};
-  });
-
+describe('handler/worker', () => {
   afterEach(() => {
     sinon.restore();
   });
 
-  it('runContainerWithGpu', async () => {
-    let result;
-    (Docker as any).dockerode = {
-      createContainer: async (createContainerOptions: any) => {
-        result = createContainerOptions;
-        return {
-          start: () => {},
-        };
+  it('requestToPayout', async () => {
+    const worker = new Worker(true);
+    let result = false;
+    (worker as any).ainConnect = {
+      getCurrentBalance: async () => 10000,
+      isAinAddressKycVerified: async () => true,
+      payout: () => {
+        result = true;
       },
     };
-    const name = 'containerName';
-    const image = 'imagePath:latest';
-    const gpuDeviceNumber = '2';
-    const publishPorts = {
-      80: '80',
-    };
-    await Docker.runContainerWithGpu(
-      name,
-      image,
-      gpuDeviceNumber,
-      publishPorts,
-    );
+    await worker.requestToPayout();
+    expect(true).toEqual(result);
+  });
 
-    expect(result).toEqual({
-      name,
-      ExposedPorts: {
-        [`${publishPorts[80]}/tcp`]: {},
+  it('requestToPayout [balance < THRESHOLD_AMOUNT]', async () => {
+    const worker = new Worker(true);
+    let result = false;
+    (worker as any).ainConnect = {
+      getCurrentBalance: async () => 10,
+      isAinAddressKycVerified: async () => true,
+      payout: () => {
+        result = true;
       },
-      Env: [`NVIDIA_VISIBLE_DEVICES=${gpuDeviceNumber}`],
-      Image: image,
-      HostConfig: {
-        AutoRemove: true,
-        PortBindings: {
-          [`${publishPorts[80]}/tcp`]: [{ HostPort: '80' }],
-        },
-        DeviceRequests: [
-          {
-            Driver: '',
-            Count: 0,
-            DeviceIDs: [gpuDeviceNumber],
-            Capabilities: [['gpu']],
-            Options: {},
-          },
-        ],
-      },
-    });
+    };
+    await worker.requestToPayout();
+    expect(false).toEqual(result);
   });
 });

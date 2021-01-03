@@ -38,6 +38,7 @@ export const FUNCTIONS_NAMES = {
   sendSignedTransaction: 'sendSignedTransaction',
   setWorkerInfo: 'setWorkerInfo',
   inferResponse: 'inferResponse',
+  isAinAddressKycVerified: 'isAinAddressKycVerified',
 };
 
 export function getKycAinPath(address: string) {
