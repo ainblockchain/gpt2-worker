@@ -1,70 +1,150 @@
-<h1 align="center">AIN Connect Worker 도커 버전</h1>
-<h4 align="center">AIN Connect 와 연결하여 HW 생태계를 만들어주는 프로젝트이다.</h4>
-                                                                                                
-**AIN Worker** 프로젝트는 Node.js로 작성되었습니다.
+# AI Network Worker
 
-<br>
 
-## 🛠사전 설치
+In order to run an AIN worker, you need an ubuntu environment with GPU. The required GPU specifications may differ depending on the types of model to be served, and the requirements for each model can be found in the Model List section. In this tutorial, we will run a worker that provides the gpt-2-large-torch-serving model in the ubuntu 18.04 environment where Tesla K80 is installed.
 
-- ESLint 가 지원되는 에디터 (IntelliJ, VSCode 등)
-- Node.js 12.16+
-- Yarn 1.22+ (`npm install -g yarn`)
+# Run AIN Worker
 
-<br>
+## 1. Check Graphics Driver
+Before running a worker, you should check the requirements. First, let's check if the graphics driver is installed correctly. Please enter the following command:
 
-## 도커 빌드 및 업로드
 ```
-./imagePath.sh
+$ nvidia-smi
 ```
 
-## 준비
+The results will be printed in the following form, and you can check the CUDA version supported by your driver.
+
+```
++-----------------------------------------------------------------------------+
+| NVIDIA-SMI 450.80.02    Driver Version: 450.80.02    CUDA Version: 11.0     |
+|-------------------------------+----------------------+----------------------+
+| GPU  Name        Persistence-M| Bus-Id        Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp  Perf  Pwr:Usage/Cap|         Memory-Usage | GPU-Util  Compute M. |
+|                               |                      |               MIG M. |
+|===============================+======================+======================|
+|   0  Tesla K80           Off  | 00002DE1:00:00.0 Off |                    0 |
+| N/A   44C    P0    69W / 149W |      0MiB / 11441MiB |      0%      Default |
+|                               |                      |                  N/A |
++-------------------------------+----------------------+----------------------+
+
++-----------------------------------------------------------------------------+
+| Processes:                                                                  |
+|  GPU   GI   CI        PID   Type   Process name                  GPU Memory |
+|        ID   ID                                                   Usage      |
+|=============================================================================|
+|  No running processes found                                                 |
++-----------------------------------------------------------------------------+
+```
+
+
+## 2. Check Nvidia Docker
+The next step is to check whether the docker and Nvidia docker is installed, which allows you to utilize the GPU on docker containers. Please enter the following command:
+
+```
+$ sudo docker run --rm --gpus all nvidia/cuda:11.0-base nvidia-smi
+```
+
+After you run the above command, you should see something similar to this:
+
+```
++-----------------------------------------------------------------------------+
+| NVIDIA-SMI 450.80.02    Driver Version: 450.80.02    CUDA Version: 11.0     |
+|-------------------------------+----------------------+----------------------+
+| GPU  Name        Persistence-M| Bus-Id        Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp  Perf  Pwr:Usage/Cap|         Memory-Usage | GPU-Util  Compute M. |
+|                               |                      |               MIG M. |
+|===============================+======================+======================|
+|   0  Tesla K80           Off  | 00002DE1:00:00.0 Off |                    0 |
+| N/A   44C    P0    69W / 149W |      0MiB / 11441MiB |      0%      Default |
+|                               |                      |                  N/A |
++-------------------------------+----------------------+----------------------+
+
++-----------------------------------------------------------------------------+
+| Processes:                                                                  |
+|  GPU   GI   CI        PID   Type   Process name                  GPU Memory |
+|        ID   ID                                                   Usage      |
+|=============================================================================|
+|  No running processes found                                                 |
++-----------------------------------------------------------------------------+
+```
+
+## 3. Start Running a Worker
+
+Once the graphics driver and Nvidia docker are installed, you're now ready to run the AIN worker. First of all, download the latest AIN Worker docker image using the docker pull command.
+
+```
+$ sudo docker pull ainblockchain/worker-docker
+```
+
+After that, run AIN Worker with the command below:
+
+```
+$ sudo docker run -d --name ain-worker \
+ -v {/PATH/TO/CONFIG}:/server/env.json \
+ -v /var/run/docker.sock:/var/run/docker.sock \
+ --network host ainblockchain/worker-docker
+```
+
+**/PATH/TO/CONFIG** contains the path to the config file that contains the parameters required to run a worker. After creating a file in the form below, replace **/PATH/TO/CONFIG** with the path of the file. After successfully running a worker, keep the config file safe, since it contains your Ethereum address and AIN private key.
+
 ```
 {
-  "ETH_ADDRESS": "", // 출금하기 위한 이더리움 주소 (ex. 0x~)
-  "MODEL_NAME": "", // 추론 모델 이름 (ex. gpt-2-trump-torch-serving)
-  "GPU_DEVICE_NUMBER": "" // GPU 장치 번호로, nvidia-smi를 통해 GPU 장치 번호를 확인한다. ex 1
+    // Ethereum wallet address to receive rewards
+    "ETH_ADDRESS": {INPUT YOUR ETHEREUM WALLET ADDRESS HERE},
+    // Model name you want to serve on the worker
+    "MODEL_NAME": {INPUT MODEL NAME ON MODEL LIST},
+    // GPU device number to be used by the worker
+    "GPU_DEVICE_NUMBER": "0",
+    // (Optional) If it doesn't exist, it will be created automatically.
+    "AIN_PRIVATE_KEY": {INPUT YOUR AIN PRIVATE KEY}
 }
 ```
-- 해당 정보를 JSON 파일로 저장을 한다.(env.json)
 
-## 시작
+### Model List
+The list of models currently supported by AIN Worker is as follows:
+
+-  gpt-2-large-torch-serving(Model Name) // 5 GB(GPU Memory Requirement) // 10.1 (Minimum CUDA version)
+-  gpt-2-trump-torch-serving(Model Name) // 2 GB(GPU Memory Requirement) // 10.1 (Minimum CUDA version)
+
+When you have finished executing the command, you can check whether the worker is running normally through the docker logs. You can check the worker's logs with the following command:
+
 ```
-yarn start
-
-// or
-
-docker run -d --name worker \
- -v {env.json PATH}:/server/env.json -v /var/run/docker.sock:/var/run/docker.sock \
- --network host ainblockchain/worker-docker 
-```
-
-
-## 로그
-```
-docker logs -f worker
+$ sudo docker logs -f ain-worker
 ```
 
-## 종료
+If the following log is displayed, the worker has been successfully started and is in the process of preparing to provide a model. This step can take about 15 to 25 minutes.
+
 ```
-docker rm -f worker {Model Name}
+2020-12-14T04:21:23.362Z [manager/worker] info: [+] Start to create Job Container. It can take a long time.
 ```
 
-## 유닛 테스트 실행
+After that, once the following message is displayed, the model is ready and is being served.
+
+```
+2020-12-14T04:37:03.498Z [manager/worker] info: [+] Success to create Job Container.
+2020-12-14T04:38:03.654Z [manager/worker] info: [+] Start to listen Job
+```
+
+## 4. Exit a Worker
+
+To terminate the AIN Worker, enter the following command:
+
+```
+$ sudo docker rm -f ain-worker {INPUT MODEL NAME ON MODEL LIST}
+
+```
+
+
+# For Dev
+
+## How To Build Docker
+
+```
+docker build -t {INPUT DOCKER TAG} .
+```
+
+## How To Test
+
 ```
 yarn test
 ```
-
-## 코드 스타일 검사
-```
-yarn lint
-```
-
-
-# 코드 구조 설명 (src)
-- common: 공통으로 사용하는 모듈 및 변수 모음
-- manager: 관리 로직 모음
-- util: 기능 로직 모음
-- _test_: 유닛 테스트 코드
-
-<br>
