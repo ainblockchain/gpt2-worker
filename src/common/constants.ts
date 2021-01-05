@@ -1,65 +1,43 @@
-import * as types from './types';
+import * as fs from 'fs';
+import { isValidAddress } from '@ainblockchain/ain-util';
+import Logger from './logger';
 
-export const PROD_FIREBASE_CONFIG = {
-  apiKey: 'AIzaSyA_ss5fiOD6bckPQk7qnb_Ruwd29OVWXE8',
-  authDomain: 'gpt2-ainetwork.firebaseapp.com',
-  databaseURL: 'https://gpt2-ainetwork.firebaseio.com',
-  projectId: 'gpt2-ainetwork',
-  storageBucket: 'gpt2-ainetwork.appspot.com',
-  messagingSenderId: '1045334268091',
-  appId: '1:1045334268091:web:c0490dfa3e8057a078f19e',
-  measurementId: 'G-8NBD57K71C',
-};
+const log = Logger.createLogger('common/constants');
 
-export const STAGING_FIREBASE_CONFIG = {
-  apiKey: 'AIzaSyA_ss5fiOD6bckPQk7qnb_Ruwd29OVWXE8',
-  authDomain: 'gpt2-ainetwork.firebaseapp.com',
-  databaseURL: 'https://gpt2-ainetwork.firebaseio.com',
-  projectId: 'gpt2-ainetwork',
-  storageBucket: 'gpt2-ainetwork.appspot.com',
-  messagingSenderId: '1045334268091',
-  appId: '1:1045334268091:web:c0490dfa3e8057a078f19e',
-  measurementId: 'G-8NBD57K71C',
-};
+export const ENV_PATH = './env.json';
+
+let env;
+try {
+  env = JSON.parse(String(fs.readFileSync(ENV_PATH)));
+} catch (err) {
+  log.error('[-] Failed to load env file.');
+}
 
 export const {
-  WORKER_NAME,
-  MNEMONIC,
   MODEL_NAME,
-  JOB_PORT,
   GPU_DEVICE_NUMBER,
-  TEST,
-} = process.env;
+  ETH_ADDRESS,
+  AIN_PRIVATE_KEY,
+} = env;
+export const ENV = env;
 
-export const MAX_IMAGE_COUNT = 2;
 export const statusCode = {
   Success: 0,
   Failed: 1,
 };
 
-export const NODE_ENV = process.env.NODE_ENV || 'prod';
+export const NODE_ENV = env.NODE_ENV || 'prod';
+export const JOB_PORT = env.JOB_PORT || '7777';
+export const ENABLE_AUTO_PAYOUT = env.ENABLE_AUTO_PAYOUT || 'true';
 
-export const modelInfo: types.ModelInfo = {
-  'gpt-2-large-length-1': {
-    apiPath: '/v1/models/gpt-2-large:predict',
-    method: 'post',
-    imagePath: 'gkswjdzz/gpt-2-large-length-1',
-    port: 8501,
-    framework: 'tensorflow',
-  },
-  'gpt-2-large-torch-serving': {
-    apiPath: '/predictions/gpt2-large',
-    method: 'post',
-    imagePath: 'gkswjdzz/gpt-2-large-torch-serving',
-    port: 8080,
-    framework: 'pytorch',
-  },
-};
+export const START_TIME = Date.now();
 
 export const validateConstants = () => {
-  if (!WORKER_NAME || !MNEMONIC || !MODEL_NAME || !modelInfo[MODEL_NAME] || !GPU_DEVICE_NUMBER
-    || !['prod', 'staging'].includes(NODE_ENV) || !JOB_PORT) {
-    return false;
+  if (!ETH_ADDRESS || !isValidAddress(ETH_ADDRESS)) {
+    throw new Error(`Invalid "ETH_ADDRESS" - ${ETH_ADDRESS}`);
+  } else if (!GPU_DEVICE_NUMBER || GPU_DEVICE_NUMBER === '') {
+    throw new Error('"GPU_DEVICE_NUMBER" Does not Exist. (ex. 0)');
+  } else if (!['prod', 'staging'].includes(NODE_ENV)) {
+    throw new Error(`Invalid NODE_ENV:${NODE_ENV} - [prod, staging]`);
   }
-  return true;
 };
