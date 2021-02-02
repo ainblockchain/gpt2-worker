@@ -1,4 +1,5 @@
 import Dockerode from 'dockerode';
+import * as types from '../common/types';
 
 export default class Docker {
   private static dockerode = new Dockerode({ socketPath: '/var/run/docker.sock' });
@@ -7,38 +8,41 @@ export default class Docker {
    * Run Docker GPU Container.
    * @param name - Container Name.
    * @param image - Docker Image Path.
-   * @param gpuDeviceNumber - GPU Device Number.
-   * @param publishPorts - Publish a container's port(s) to the host.
+   * @param option - (publishPorts...)
    */
   static async runContainerWithGpu(name: string,
     image: string,
-    gpuDeviceNumber: string,
-    publishPorts?: { [externalPort: string]: string }) {
+    option: types.CreateContainerOption) {
     // Pull Docker Container Image.
     await Docker.pullImage(image);
 
+    const env = (option.gpuDeviceNumber) ? [`NVIDIA_VISIBLE_DEVICES=${option.gpuDeviceNumber}`] : [];
     const createContainerOptions = {
       name,
       ExposedPorts: {},
-      Env: [`NVIDIA_VISIBLE_DEVICES=${gpuDeviceNumber}`],
+      Env: (option.env) ? env.concat(option.env) : env,
       Image: image,
+      Labels: {
+        comcom: '',
+      },
       HostConfig: {
         AutoRemove: true,
+        Binds: option.binds,
         PortBindings: {},
-        DeviceRequests: [
+        DeviceRequests: (option.gpuDeviceNumber) ? [
           {
             Driver: '',
             Count: 0,
-            DeviceIDs: [gpuDeviceNumber],
+            DeviceIDs: [option.gpuDeviceNumber],
             Capabilities: [['gpu']],
             Options: {},
           },
-        ],
+        ] : [],
       },
     };
 
-    if (publishPorts) {
-      for (const [externalPort, internalPort] of Object.entries(publishPorts)) {
+    if (option.publishPorts) {
+      for (const [externalPort, internalPort] of Object.entries(option.publishPorts)) {
         createContainerOptions.ExposedPorts[`${internalPort}/tcp`] = {};
         createContainerOptions.HostConfig.PortBindings[`${internalPort}/tcp`] = [{ HostPort: externalPort }];
       }
@@ -81,5 +85,42 @@ export default class Docker {
   static async killContainer(name: string) {
     const containerHandler = Docker.dockerode.getContainer(name);
     await containerHandler.remove({ force: true });
+  }
+
+  /**
+   * Method to check if container exists.
+   * @param name - Container Name.
+   */
+  static existContainer(name: string) {
+    return !!Docker.dockerode.getContainer(name);
+  }
+
+  /**
+   * Method to get container log.
+   * @param name Container Name.
+   * @param dataHandler Callback function to process log data.
+   * @param endHandler Callback function called when log streaming is finished.
+   */
+  static containerLog(name: string,
+    dataHandler: Function,
+    endHandler: Function) {
+    const container = Docker.dockerode.getContainer(name);
+    container.logs({
+      stdout: true,
+      stderr: true,
+      follow: true,
+    }, async (err, stream) => {
+      if (err || !stream) {
+        await endHandler(err || 'Stream Not Exists');
+        return;
+      }
+
+      stream.on('data', async (chunk) => {
+        await dataHandler((chunk.toString() as string).slice(8));
+      });
+      stream.on('end', async () => {
+        await endHandler();
+      });
+    });
   }
 }

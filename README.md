@@ -79,8 +79,8 @@ $ sudo docker pull ainblockchain/worker-docker
 After that, run AIN Worker with the command below:
 
 ```
-$ sudo docker run -d --name ain-worker \
- -v {/PATH/TO/CONFIG}:/server/env.json \
+$ sudo docker run -l comcom -d --name ain-worker \
+ -v {/PATH/TO/CONFIG ROOT PATH}:/server/shared \
  -v /var/run/docker.sock:/var/run/docker.sock \
  --network host ainblockchain/worker-docker
 ```
@@ -93,6 +93,9 @@ $ sudo docker run -d --name ain-worker \
     "ETH_ADDRESS": {INPUT YOUR ETHEREUM WALLET ADDRESS HERE},
     // Model name you want to serve on the worker
     "MODEL_NAME": {INPUT MODEL NAME ON MODEL LIST},
+    // default: false
+    "TRAIN_MODE" {"true" or "false"}
+    "CONFIG_ROOT_PATH": {/PATH/TO/CONFIG ROOT PATH}
     // GPU device number to be used by the worker
     "GPU_DEVICE_NUMBER": "0",
     // (Optional) If it doesn't exist, it will be created automatically.
@@ -130,8 +133,8 @@ After that, once the following message is displayed, the model is ready and is b
 To terminate the AIN Worker, enter the following command:
 
 ```
-$ sudo docker rm -f ain-worker {INPUT MODEL NAME ON MODEL LIST}
-
+$ sudo docker rm -f $(sudo docker ps -f "label=comcom" -q -a)
+$ sudo rm -rf {/PATH/TO/CONFIG ROOT PATH}/train
 ```
 
 

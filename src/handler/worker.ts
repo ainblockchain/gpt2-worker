@@ -1,5 +1,6 @@
 import axios from 'axios';
 import * as fs from 'fs';
+import * as util from 'util';
 import Logger from '../common/logger';
 import * as types from '../common/types';
 import Docker from './docker';
@@ -8,6 +9,8 @@ import AinConnect from '../interface/ainConnect';
 import { THRESHOLD_AMOUNT } from '../interface/firebaseInfo';
 
 const log = Logger.createLogger('handler/worker');
+
+const exec = util.promisify(require('child_process').exec);
 
 const delay = async (ms: number) => {
   const result = await new Promise((resolve) => setTimeout(resolve, ms));
@@ -19,7 +22,9 @@ export default class Worker {
 
   protected modelInfo: types.ModelInfo;
 
-  static workerInfoUpdateMs = 30 * 1000; // 30s
+  private trainRunning: boolean;
+
+  static workerInfoUpdateMs = 30 * 1000;
 
   static requestPayoutMs = 10 * 60 * 1000;
 
@@ -35,6 +40,7 @@ export default class Worker {
     this.totalRewardAmount = 0;
     this.totalPayoutAmount = 0;
     this.ainConnect = new AinConnect(constants.AIN_PRIVATE_KEY, test);
+    this.trainRunning = false;
   }
 
   /**
@@ -43,7 +49,7 @@ export default class Worker {
   async start() {
     log.info(`[+] Start Worker [
       Worker Address: ${this.ainConnect.getAddress()}
-      Model Name: ${constants.MODEL_NAME}
+      Model Name: ${(!constants.TRAIN_MODE) ? constants.MODEL_NAME : '-'}
     ]`);
     await this.ainConnect.signIn();
 
@@ -56,39 +62,43 @@ export default class Worker {
     fs.truncateSync(constants.ENV_PATH, 0);
     fs.appendFileSync(constants.ENV_PATH, JSON.stringify(newEnv, null, 2));
 
-    // Get AI Model Information on Firebase Database.
-    this.modelInfo = await this.ainConnect.getModelInfo();
-    const selectModelInfo = this.modelInfo[constants.MODEL_NAME!];
-    if (!selectModelInfo) {
-      throw new Error(`Invaild MODEL_NAME[${constants.MODEL_NAME}]`);
-    }
-
-    // Create Container for ML Job.
-    log.info('[+] Start to create Job Container. It can take a long time.');
-    await Docker.runContainerWithGpu(constants.MODEL_NAME!, selectModelInfo.imagePath,
-      constants.GPU_DEVICE_NUMBER!, {
-        [constants.JOB_PORT!]: String(selectModelInfo.port),
-      });
-    log.info('[+] Success to create Job Container.');
-
-    // Check AI Model container by calling health API.
-    let health = false;
-    for (let cnt = 0; cnt < Worker.healthCheckMaxCnt; cnt += 1) {
-      health = await this.healthCheckContainer(constants.MODEL_NAME!);
-      if (health) {
-        break;
+    if (!constants.TRAIN_MODE) {
+      // Get AI Model Information on Firebase Database.
+      this.modelInfo = await this.ainConnect.getModelInfo();
+      const selectModelInfo = this.modelInfo[constants.MODEL_NAME!];
+      if (!selectModelInfo) {
+        throw new Error(`Invaild MODEL_NAME[${constants.MODEL_NAME}]`);
       }
-      await delay(Worker.healthCheckDelayMs);
-    }
-    if (!health) {
-      await Docker.killContainer(constants.MODEL_NAME!);
-      throw new Error('Failed to run Container.');
+
+      // Create Container for ML Job.
+      log.info('[+] Start to create Job Container. It can take a long time.');
+      await Docker.runContainerWithGpu(constants.MODEL_NAME!, selectModelInfo.imagePath, {
+        publishPorts: {
+          [constants.JOB_PORT!]: String(selectModelInfo.port),
+        },
+        gpuDeviceNumber: constants.GPU_DEVICE_NUMBER!,
+      });
+      log.info('[+] Success to create Job Container.');
+
+      // Check AI Model container by calling health API.
+      let health = false;
+      for (let cnt = 0; cnt < Worker.healthCheckMaxCnt; cnt += 1) {
+        health = await this.healthCheckContainer(constants.MODEL_NAME!);
+        if (health) {
+          break;
+        }
+        await delay(Worker.healthCheckDelayMs);
+      }
+      if (!health) {
+        await Docker.killContainer(constants.MODEL_NAME!);
+        throw new Error('Failed to run Container.');
+      }
     }
 
     // Set Worker Information on firebase database.
     setInterval(async () => {
       await this.ainConnect.setWorkerInfo({
-        jobType: constants.MODEL_NAME!,
+        jobType: constants.MODEL_NAME || 'training',
       });
     }, Worker.workerInfoUpdateMs);
 
@@ -99,8 +109,11 @@ export default class Worker {
     this.ainConnect.listenTransaction(this.listenTransactionHandler);
 
     log.info('[+] Start to listen Job');
-    this.ainConnect.listenForJobRequest(this.jobHandler);
-
+    if (constants.TRAIN_MODE) {
+      this.ainConnect.listenFortrainingRequest(this.jobTrainingHandler);
+    } else {
+      this.ainConnect.listenForInferenceRequest(this.jobInferenceHandler);
+    }
     // Auto payout
     if (constants.ENABLE_AUTO_PAYOUT === 'true') {
       setInterval(this.requestToPayout, Worker.requestPayoutMs);
@@ -140,9 +153,9 @@ export default class Worker {
   }
 
   /**
-   * Request to ML Container.
+   * Request to ML Inference Container.
   */
-  public jobHandler = async (params: types.InferenceHandlerParams) => {
+  public jobInferenceHandler = async (params: types.InferenceHandlerParams) => {
     const vector = JSON.parse(params.data.inputVector.replace(/'/g, ''));
     const data = (this.modelInfo[constants.MODEL_NAME!].framework === 'tensorflow') ? {
       signature_name: 'predict',
@@ -183,5 +196,89 @@ export default class Worker {
         log.info(`[+] Current AIN Total Payout balance: ${this.totalPayoutAmount} ain (+ ${params.value})`);
       }
     }
+  }
+
+  /**
+   * Request to ML training Container.
+  */
+  public jobTrainingHandler = async (trainId: string, params: types.trainingParams) => {
+    if (this.trainRunning) {
+      throw new Error('Other task is already in progress');
+    }
+    this.trainRunning = true;
+    const workerRootPath = `${constants.SHARED_ROOT_PATH}/train/${trainId}`;
+    const containerRootPath = `/train/${trainId}`;
+    const containerName = 'worker-train';
+    await exec(`mkdir -p ${workerRootPath}`);
+    try {
+      await this.ainConnect.downloadFile(params.datasetPath, `${workerRootPath}/${params.fileName}`);
+      // Create Container for training
+      await Docker.runContainerWithGpu(containerName, params.imagePath, {
+        gpuDeviceNumber: constants.GPU_DEVICE_NUMBER,
+        env: [`epochs=${params.epochs}`,
+          `jobType=${params.jobType}`,
+          `mountedDataPath=${containerRootPath}/${params.fileName}`,
+          `outputPath=${containerRootPath}/${params.jobType}.mar`,
+          `logDirectory=${containerRootPath}/logs`],
+        binds: [`${constants.CONFIG_ROOT_PATH}/train/${trainId}:${containerRootPath}`],
+      });
+
+      this.monitoringTrainContainer(containerName, {
+        jobType: params.jobType,
+        logPath: `${workerRootPath}/logs`,
+        workerRootPath,
+        trainId,
+        uploadModelPath: params.uploadModelPath,
+        outputLocalPath: `${workerRootPath}/${params.jobType}.mar`,
+      });
+      return {
+        startedAt: Date.now(),
+        status: 'running',
+      };
+    } catch (error) {
+      log.error(error);
+      await exec(`rm -rf ${workerRootPath}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Monitoring Method About training Container.
+   * @param name training Container Name.
+   * @param params MonitoringParams(trainId..).
+   */
+  private monitoringTrainContainer(name: string, params: types.MonitoringParams) {
+    Docker.containerLog(name, async (data: string) => {
+      // Data handler
+      await this.ainConnect.updateTrainingResult(params.trainId, {
+        logs: {
+          [String(Date.now())]: data,
+        },
+      });
+    },
+    async (err: Error) => {
+      this.trainRunning = false;
+      // End handler
+      if (err) {
+        await this.ainConnect.updateTrainingResult(params.trainId, {
+          status: 'failed',
+        });
+        return;
+      }
+
+      try {
+        const completed = fs.existsSync(params.outputLocalPath);
+        if (completed) {
+          await this.ainConnect.uploadFile(params.uploadModelPath, params.outputLocalPath);
+        }
+        await this.ainConnect.updateTrainingResult(params.trainId, {
+          modelName: `${params.jobType}.mar`,
+          status: (completed) ? 'completed' : 'failed',
+        });
+      } catch (error) {
+        log.error(`[-] Failed to send result about training - ${error.message}`);
+      }
+      await exec(`rm -rf ${params.workerRootPath}`);
+    });
   }
 }

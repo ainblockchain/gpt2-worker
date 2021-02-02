@@ -58,7 +58,7 @@ export function getAccountsBalancePath(address: string) {
 }
 
 export function getWorkerInfoPath(address: string) {
-  return `/worker/info/${address}`;
+  return `/worker_info/${address}`;
 }
 
 export function getInferencePath(address: string) {
@@ -79,4 +79,20 @@ export function getTransferValuePath(fromAddress: string, toAddress: string, req
 
 export function getUserTransactionsPath(address: string) {
   return `/user_transactions/${address}/`;
+}
+
+export function gettrainingPath(address: string) {
+  return `/training/${address}/`;
+}
+
+export function getTrainingResultPath(trainId: string, address: string) {
+  return `/training_result/${trainId}/${address}/`;
+}
+
+export function getDatasetPath(uid: string, trainId: string, fileName: string) {
+  return `/trainData/${uid}/${trainId}/${fileName}`;
+}
+
+export function getModelUploadPath(trainId: string, address: string, fileName: string) {
+  return `/trainResult/${trainId}/${address}/${fileName}`;
 }

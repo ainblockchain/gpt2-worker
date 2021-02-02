@@ -208,7 +208,7 @@ describe('interface/ainConnect', () => {
     }).toEqual(resultParams['tx_body']);
   });
 
-  it('JobRequestHandler', async () => {
+  it('inferenceListenHandler', async () => {
     const ainConnect = new AinConnect(PRIVATE_KEY, true);
     const requestId = 'requestId';
     const data = {
@@ -225,7 +225,7 @@ describe('interface/ainConnect', () => {
     (ainConnect as any).sendInferenceResult = async (_: string, value: any) => {
       result = value;
     };
-    await (ainConnect as any).JobRequestHandler(method)(data);
+    await (ainConnect as any).inferenceListenHandler(method)(data);
 
     expect({
       params: {
@@ -237,7 +237,7 @@ describe('interface/ainConnect', () => {
     }).toEqual(result);
   });
 
-  it('JobRequestHandler [value.data.requestedAt < constants.START_TIME]', async () => {
+  it('inferenceListenHandler [value.data.requestedAt < constants.START_TIME]', async () => {
     const ainConnect = new AinConnect(PRIVATE_KEY, true);
     const requestId = 'requestId';
     const data = {
@@ -254,12 +254,12 @@ describe('interface/ainConnect', () => {
     (ainConnect as any).sendInferenceResult = async (_: string, value: any) => {
       result = value;
     };
-    await (ainConnect as any).JobRequestHandler(method)(data);
+    await (ainConnect as any).inferenceListenHandler(method)(data);
 
     expect(undefined).toEqual(result);
   });
 
-  it('JobRequestHandler [method error]', async () => {
+  it('inferenceListenHandler [method error]', async () => {
     const ainConnect = new AinConnect(PRIVATE_KEY, true);
     const requestId = 'requestId';
     const data = {
@@ -278,15 +278,83 @@ describe('interface/ainConnect', () => {
     (ainConnect as any).sendInferenceResult = async (_: string, value: any) => {
       result = value;
     };
-    await (ainConnect as any).JobRequestHandler(method)(data);
+    await (ainConnect as any).inferenceListenHandler(method)(data);
 
     expect({
-      errMessage: 'Error: error',
+      errMessage: 'error',
       params: {
         address: '0x8bdd9aa9fFcFDc4b09D41649C7Ac802E21b544Cb',
         requestId,
       },
       statusCode: 1,
+    }).toEqual(result);
+  });
+
+  it('trainingListenHandler', async () => {
+    const ainConnect = new AinConnect(PRIVATE_KEY, true);
+    const trainId = 'trainId';
+    const data = {
+      key: trainId,
+      val: () => ({
+        requestedAt: 99999999999999,
+        uid: 'uid',
+        jobType: 'jobType',
+        fileName: 'fileName',
+      }),
+    };
+
+    const method = async () => ({
+      status: 'success',
+    });
+    let result;
+    (ainConnect as any).getJobTypeInfo = async (_: string, value: any) => ({
+      type: 'training',
+    });
+    (ainConnect as any).updateTrainingResult = async (_: string, value: any) => {
+      result = value;
+    };
+    await (ainConnect as any).trainingListenHandler(method)(data);
+
+    expect({
+      params: {
+        address: '0x8bdd9aa9fFcFDc4b09D41649C7Ac802E21b544Cb',
+        trainId,
+      },
+      status: 'success',
+    }).toEqual(result);
+  });
+
+  it('trainingListenHandler [Error: Invalid Params]', async () => {
+    const ainConnect = new AinConnect(PRIVATE_KEY, true);
+    const trainId = 'trainId';
+    const data = {
+      key: trainId,
+      val: () => ({
+        requestedAt: 99999999999999,
+        uid: 'uid',
+        jobType: 'jobType',
+        fileName: 'fileName',
+      }),
+    };
+
+    const method = async () => ({
+      status: 'success',
+    });
+    let result;
+    (ainConnect as any).getJobTypeInfo = async (_: string, value: any) => ({
+      type: 'inference',
+    });
+    (ainConnect as any).updateTrainingResult = async (_: string, value: any) => {
+      result = value;
+    };
+    await (ainConnect as any).trainingListenHandler(method)(data);
+
+    expect({
+      params: {
+        address: '0x8bdd9aa9fFcFDc4b09D41649C7Ac802E21b544Cb',
+        trainId,
+      },
+      errMessage: 'Invalid Params',
     }).toEqual(result);
   });
 });
