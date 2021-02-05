@@ -399,7 +399,7 @@ export default class AinConnect {
    * Listen For trainingRequest
    * @param method
    */
-  async listenFortrainingRequest(method: Function) {
+  async listenForTrainingRequest(method: Function) {
     this.app.database()
       .ref(firebaseInfo.gettrainingPath(this.keyInfo.address))
       .on('child_added', this.trainingListenHandler(method));

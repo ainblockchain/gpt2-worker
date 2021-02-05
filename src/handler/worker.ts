@@ -110,7 +110,7 @@ export default class Worker {
 
     log.info('[+] Start to listen Job');
     if (constants.TRAIN_MODE) {
-      this.ainConnect.listenFortrainingRequest(this.jobTrainingHandler);
+      this.ainConnect.listenForTrainingRequest(this.jobTrainingHandler);
     } else {
       this.ainConnect.listenForInferenceRequest(this.jobInferenceHandler);
     }
