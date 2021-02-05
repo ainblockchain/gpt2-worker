@@ -110,7 +110,7 @@ describe('interface/ainConnect', () => {
               tx_body: {
                 nonce: -1,
                 operation: {
-                  ref: `/transfer/0x8bdd9aa9fFcFDc4b09D41649C7Ac802E21b544Cb/0x945bDFa911cf895Bca3F4b5B5816BcfDb5A1480b/${timestamp}/value`,
+                  ref: `/transfer/0x8bdd9aa9fFcFDc4b09D41649C7Ac802E21b544Cb/0x744Cb74A78Ac6dae46ebdaCa43e38ED60F965B8/${timestamp}/value`,
                   type: firebaseInfo.OPERRATION_TYPE.setValue,
                   value: amount,
                 },

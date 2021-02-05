@@ -20,7 +20,7 @@ export const STAGING_FIREBASE_CONFIG = {
   measurementId: 'G-8NBD57K71C',
 };
 
-export const PAYOUT_POOL_ADDR = '0x945bDFa911cf895Bca3F4b5B5816BcfDb5A1480b';
+export const PAYOUT_POOL_ADDR = '0x744Cb74A78Ac6dae46ebdaCa43e38ED60F965B8';
 
 export const THRESHOLD_AMOUNT = 100;
 
