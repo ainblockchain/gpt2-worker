@@ -20,8 +20,6 @@ export const STAGING_FIREBASE_CONFIG = {
   measurementId: 'G-8NBD57K71C',
 };
 
-export const PAYOUT_POOL_ADDR = '0x744Cb74A78Ac6dae46ebdaCa43e38ED60F965B8';
-
 export const THRESHOLD_AMOUNT = 100;
 
 export const CURRENT_PROTOCOL_VERSION = '0.5.0';
@@ -95,4 +93,8 @@ export function getDatasetPath(uid: string, trainId: string, fileName: string) {
 
 export function getModelUploadPath(trainId: string, address: string, fileName: string) {
   return `/trainResult/${trainId}/${address}/${fileName}`;
+}
+
+export function getPoolAddrdPath() {
+  return '/pool_addresses';
 }

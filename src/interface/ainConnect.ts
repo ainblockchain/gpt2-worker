@@ -132,12 +132,12 @@ export default class AinConnect {
    * get payload about transfer.
    * @param payoutAmount - payout amount
    */
-  private getPayloadForTransfer(payoutAmount: number) {
+  private getPayloadForTransfer(poolAddr: string, payoutAmount: number) {
     const timestamp = Date.now();
     const transaction = {
       operation: {
         type: firebaseInfo.OPERRATION_TYPE.setValue,
-        ref: firebaseInfo.getTransferValuePath(this.keyInfo.address, firebaseInfo.PAYOUT_POOL_ADDR, `${timestamp}`),
+        ref: firebaseInfo.getTransferValuePath(this.keyInfo.address, poolAddr, `${timestamp}`),
         value: payoutAmount,
       },
       timestamp,
@@ -146,12 +146,32 @@ export default class AinConnect {
     return this.signTx(transaction);
   }
 
+  async getPoolAddr() {
+    const snap = await this.app.database()
+      .ref(firebaseInfo.getPoolAddrdPath())
+      .once('value');
+
+    let poolAddr;
+    for (const [addr, key] of Object.entries(snap.val())) {
+      if (key === 'C_AIN_POOL') {
+        poolAddr = addr;
+      }
+    }
+
+    if (!poolAddr) {
+      throw new Error('poolAddr Not Exist');
+    }
+
+    return poolAddr;
+  }
+
   /**
    * Request to Payout.
    * @param payoutAmount - payout amount
    */
   async payout(payoutAmount: number) {
-    const payloadForTransfer = this.getPayloadForTransfer(payoutAmount);
+    const poolAddr = await this.getPoolAddr();
+    const payloadForTransfer = this.getPayloadForTransfer(poolAddr, payoutAmount);
     const { timestamp } = payloadForTransfer.signedTx.tx_body;
     const transaction = {
       operation: {
@@ -167,7 +187,6 @@ export default class AinConnect {
       timestamp,
       nonce: -1,
     };
-
     await this.app.functions()
       .httpsCallable(firebaseInfo.FUNCTIONS_NAMES.sendSignedTransaction)(this.signTx(transaction)
         .signedTx);

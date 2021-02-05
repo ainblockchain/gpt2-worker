@@ -74,7 +74,7 @@ describe('interface/ainConnect', () => {
     }).toEqual(resultParams['tx_body']['operation']);
   });
 
-  it('payout', () => {
+  it('payout', async () => {
     const ainConnect = new AinConnect(PRIVATE_KEY, true);
     let resultParams = {};
     let resultFunctionsName = '';
@@ -87,7 +87,8 @@ describe('interface/ainConnect', () => {
         },
       }),
     };
-    (ainConnect as any).payout(amount);
+    (ainConnect as any).getPoolAddr = async () => '0x744Cb74A78Ac6dae46ebdaCa43e38ED60F965B8';
+    await (ainConnect as any).payout(amount);
     const { timestamp } = resultParams['tx_body'];
     // eslint-disable-next-line camelcase
     const { eth_address } = resultParams['tx_body']['operation']['value'];
