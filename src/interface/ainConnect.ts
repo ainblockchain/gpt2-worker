@@ -148,7 +148,7 @@ export default class AinConnect {
 
   async getPoolAddr() {
     const snap = await this.app.database()
-      .ref(firebaseInfo.getPoolAddrdPath())
+      .ref(firebaseInfo.getPoolAddrPath())
       .once('value');
 
     let poolAddr;
