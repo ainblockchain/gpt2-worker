@@ -95,6 +95,6 @@ export function getModelUploadPath(trainId: string, address: string, fileName: s
   return `/trainResult/${trainId}/${address}/${fileName}`;
 }
 
-export function getPoolAddrdPath() {
+export function getPoolAddrPath() {
   return '/pool_addresses';
 }
