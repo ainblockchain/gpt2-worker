@@ -259,7 +259,7 @@ export default class AinConnect {
    */
   async setWorkerInfo(workerInfo: types.WorkerInfo) {
     const timestamp = Date.now();
-    const transaction = {
+    const transaction = JSON.parse(JSON.stringify({
       operation: {
         type: firebaseInfo.OPERRATION_TYPE.setValue,
         ref: firebaseInfo.getWorkerInfoPath(this.keyInfo.address),
@@ -268,13 +268,13 @@ export default class AinConnect {
           params: {
             address: this.getAddress(),
             eth_address: constants.ETH_ADDRESS,
-            jobType: workerInfo.jobType,
+            ...workerInfo,
           },
         },
       },
       timestamp,
       nonce: -1,
-    };
+    }));
     await this.app.functions()
       .httpsCallable(firebaseInfo.FUNCTIONS_NAMES.setWorkerInfo)(
         this.signTx(transaction).signedTx,

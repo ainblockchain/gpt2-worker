@@ -1,7 +1,8 @@
 export type EnvType = 'prod' | 'staging';
 
 export type WorkerInfo = {
-  jobType: string;
+  jobType?: string;
+  type: 'inference' | 'training';
 }
 
 export type JobTypeInfo = {

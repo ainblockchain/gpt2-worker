@@ -24,7 +24,7 @@ export default class Worker {
 
   private trainRunning: boolean;
 
-  static workerInfoUpdateMs = 30 * 1000;
+  static workerInfoUpdateMs = 20 * 1000;
 
   static requestPayoutMs = 10 * 60 * 1000;
 
@@ -98,7 +98,8 @@ export default class Worker {
     // Set Worker Information on firebase database.
     setInterval(async () => {
       await this.ainConnect.setWorkerInfo({
-        jobType: constants.MODEL_NAME || 'training',
+        jobType: constants.MODEL_NAME,
+        type: (constants.MODEL_NAME) ? 'inference' : 'training',
       });
     }, Worker.workerInfoUpdateMs);
 
@@ -271,10 +272,12 @@ export default class Worker {
         if (completed) {
           await this.ainConnect.uploadFile(params.uploadModelPath, params.outputLocalPath);
         }
-        await this.ainConnect.updateTrainingResult(params.trainId, {
+        await this.ainConnect.updateTrainingResult(params.trainId, JSON.parse(JSON.stringify({
           modelName: `${params.jobType}.mar`,
           status: (completed) ? 'completed' : 'failed',
-        });
+          errMessage: (completed) ? undefined : 'Failed to train',
+        })));
+        log.debug(`[+] Train Result: ${(completed) ? 'completed' : 'failed'} - trainId: ${params.trainId}`);
       } catch (error) {
         log.error(`[-] Failed to send result about training - ${error.message}`);
       }
