@@ -432,8 +432,8 @@ export default class AinConnect {
     const trainId = data.key as string;
     const value = data.val();
     let result;
-    log.debug(`[+] Request to train - params: ${JSON.stringify(value, null, 4)}`);
-    if (value.requestedAt < constants.START_TIME) return;
+    log.debug(`[+] Request to train(id: ${trainId}) - params: ${JSON.stringify(value, null, 4)}`);
+
     try {
       const jobTypeInfo = await this.getJobTypeInfo(value.jobType);
       if (!jobTypeInfo || jobTypeInfo.type !== 'training') {
@@ -452,7 +452,7 @@ export default class AinConnect {
       };
     }
     try {
-      await this.updateTrainingResult(trainId, {
+      await this.updateTrainingResult(trainId, value.uid, {
         ...result,
         params: {
           ...value.params,
@@ -470,11 +470,11 @@ export default class AinConnect {
    * @param trainId Train Task Id.
    * @param value Update Data.
    */
-  async updateTrainingResult(trainId: string, value: any) {
+  async updateTrainingResult(trainId: string, userAddress: string, value: any) {
     const transaction = {
       operation: {
         type: firebaseInfo.OPERRATION_TYPE.setValue,
-        ref: firebaseInfo.getTrainingResultPath(trainId, this.keyInfo.address),
+        ref: firebaseInfo.getTrainingResultPath(trainId, userAddress, this.keyInfo.address),
         value,
       },
       timestamp: Date.now(),

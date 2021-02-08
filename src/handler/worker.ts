@@ -225,6 +225,7 @@ export default class Worker {
       });
 
       this.monitoringTrainContainer(containerName, {
+        userAddress: params.uid,
         jobType: params.jobType,
         logPath: `${workerRootPath}/logs`,
         workerRootPath,
@@ -251,7 +252,7 @@ export default class Worker {
   private monitoringTrainContainer(name: string, params: types.MonitoringParams) {
     Docker.containerLog(name, async (data: string) => {
       // Data handler
-      await this.ainConnect.updateTrainingResult(params.trainId, {
+      await this.ainConnect.updateTrainingResult(params.trainId, params.userAddress, {
         logs: {
           [String(Date.now())]: data,
         },
@@ -261,7 +262,7 @@ export default class Worker {
       this.trainRunning = false;
       // End handler
       if (err) {
-        await this.ainConnect.updateTrainingResult(params.trainId, {
+        await this.ainConnect.updateTrainingResult(params.trainId, params.userAddress, {
           status: 'failed',
         });
         return;
@@ -272,11 +273,12 @@ export default class Worker {
         if (completed) {
           await this.ainConnect.uploadFile(params.uploadModelPath, params.outputLocalPath);
         }
-        await this.ainConnect.updateTrainingResult(params.trainId, JSON.parse(JSON.stringify({
-          modelName: `${params.jobType}.mar`,
-          status: (completed) ? 'completed' : 'failed',
-          errMessage: (completed) ? undefined : 'Failed to train',
-        })));
+        await this.ainConnect.updateTrainingResult(params.trainId,
+          params.userAddress, JSON.parse(JSON.stringify({
+            modelName: `${params.jobType}.mar`,
+            status: (completed) ? 'completed' : 'failed',
+            errMessage: (completed) ? undefined : 'Failed to train',
+          })));
         log.debug(`[+] Train Result: ${(completed) ? 'completed' : 'failed'} - trainId: ${params.trainId}`);
       } catch (error) {
         log.error(`[-] Failed to send result about training - ${error.message}`);

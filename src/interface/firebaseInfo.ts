@@ -83,8 +83,8 @@ export function gettrainingPath(address: string) {
   return `/training/${address}/`;
 }
 
-export function getTrainingResultPath(trainId: string, address: string) {
-  return `/training_result/${trainId}/${address}/`;
+export function getTrainingResultPath(trainId: string, userAddress: string, workerAddress: string) {
+  return `/train_tasks/${userAddress}/${trainId}/response/${workerAddress}`;
 }
 
 export function getDatasetPath(uid: string, trainId: string, fileName: string) {

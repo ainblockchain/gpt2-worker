@@ -38,12 +38,13 @@ export const TRAIN_MODE = (env.TRAIN_MODE === 'true');
 export const START_TIME = Date.now();
 
 export const validateConstants = () => {
+  const gpuDeviceRe = /^\d*(,\d+)*\d*$/;
   if (!CONFIG_ROOT_PATH) {
     throw new Error('CONFIG_ROOT_PATH Not Exists');
   } else if (!ETH_ADDRESS || !isValidAddress(ETH_ADDRESS)) {
     throw new Error(`Invalid "ETH_ADDRESS" - ${ETH_ADDRESS}`);
-  } else if (!GPU_DEVICE_NUMBER || GPU_DEVICE_NUMBER === '') {
-    throw new Error('"GPU_DEVICE_NUMBER" Does not Exist. (ex. 0)');
+  } else if (!gpuDeviceRe.test(GPU_DEVICE_NUMBER)) {
+    throw new Error(`Invalid "GPU_DEVICE_NUMBER" - ${GPU_DEVICE_NUMBER}`);
   } else if (!['prod', 'staging'].includes(NODE_ENV)) {
     throw new Error(`Invalid NODE_ENV:${NODE_ENV} - [prod, staging]`);
   }

@@ -97,7 +97,7 @@ $ sudo docker run -l comcom -d --name ain-worker \
     "TRAIN_MODE" {"true" or "false"}
     "CONFIG_ROOT_PATH": {/PATH/TO/CONFIG ROOT PATH}
     // GPU device number to be used by the worker
-    "GPU_DEVICE_NUMBER": "0",
+    "GPU_DEVICE_NUMBER": "0", or "0,1" ...
     // (Optional) If it doesn't exist, it will be created automatically.
     "AIN_PRIVATE_KEY": {INPUT YOUR AIN PRIVATE KEY}
 }

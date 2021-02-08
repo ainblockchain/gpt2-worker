@@ -311,7 +311,8 @@ describe('interface/ainConnect', () => {
     (ainConnect as any).getJobTypeInfo = async (_: string, value: any) => ({
       type: 'training',
     });
-    (ainConnect as any).updateTrainingResult = async (_: string, value: any) => {
+    (ainConnect as any).updateTrainingResult = async (_: string,
+      userAddress: string, value: any) => {
       result = value;
     };
     await (ainConnect as any).trainingListenHandler(method)(data);
@@ -345,7 +346,8 @@ describe('interface/ainConnect', () => {
     (ainConnect as any).getJobTypeInfo = async (_: string, value: any) => ({
       type: 'inference',
     });
-    (ainConnect as any).updateTrainingResult = async (_: string, value: any) => {
+    (ainConnect as any).updateTrainingResult = async (_: string,
+      userAddress: string, value: any) => {
       result = value;
     };
     await (ainConnect as any).trainingListenHandler(method)(data);

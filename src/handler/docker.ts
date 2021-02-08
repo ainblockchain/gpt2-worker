@@ -33,7 +33,7 @@ export default class Docker {
           {
             Driver: '',
             Count: 0,
-            DeviceIDs: [option.gpuDeviceNumber],
+            DeviceIDs: option.gpuDeviceNumber.split(','),
             Capabilities: [['gpu']],
             Options: {},
           },

@@ -60,6 +60,7 @@ export type CreateContainerOption = {
 }
 
 export type MonitoringParams = {
+  userAddress: string;
   jobType: string;
   workerRootPath: string;
   logPath: string;
