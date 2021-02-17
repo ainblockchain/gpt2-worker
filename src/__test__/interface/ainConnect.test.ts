@@ -358,6 +358,7 @@ describe('interface/ainConnect', () => {
         trainId,
       },
       errMessage: 'Invalid Params',
+      status: 'failed',
     }).toEqual(result);
   });
 });

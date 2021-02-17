@@ -1,6 +1,7 @@
 import axios from 'axios';
 import * as fs from 'fs';
 import * as util from 'util';
+import { diff } from 'deep-object-diff';
 import Logger from '../common/logger';
 import * as types from '../common/types';
 import Docker from './docker';
@@ -35,6 +36,8 @@ export default class Worker {
   public totalRewardAmount: number;
 
   public totalPayoutAmount: number;
+
+  private trainLogData: Object;
 
   constructor(test: boolean = false) {
     this.totalRewardAmount = 0;
@@ -79,7 +82,7 @@ export default class Worker {
         gpuDeviceNumber: constants.GPU_DEVICE_NUMBER!,
       });
       log.info('[+] Success to create Job Container.');
-
+      this.trainLogData = {};
       // Check AI Model container by calling health API.
       let health = false;
       for (let cnt = 0; cnt < Worker.healthCheckMaxCnt; cnt += 1) {
@@ -213,6 +216,7 @@ export default class Worker {
     await exec(`mkdir -p ${workerRootPath}`);
     try {
       await this.ainConnect.downloadFile(params.datasetPath, `${workerRootPath}/${params.fileName}`);
+      log.debug(`[+] success to download file (id: ${trainId})`);
       // Create Container for training
       await Docker.runContainerWithGpu(containerName, params.imagePath, {
         gpuDeviceNumber: constants.GPU_DEVICE_NUMBER,
@@ -220,10 +224,10 @@ export default class Worker {
           `jobType=${params.jobType}`,
           `mountedDataPath=${containerRootPath}/${params.fileName}`,
           `outputPath=${containerRootPath}/${params.jobType}.mar`,
-          `logDirectory=${containerRootPath}/logs`],
+          `logFilePath=${containerRootPath}/logs`],
         binds: [`${constants.CONFIG_ROOT_PATH}/train/${trainId}:${containerRootPath}`],
       });
-
+      log.debug(`[+] success to create container (id: ${trainId})`);
       this.monitoringTrainContainer(containerName, {
         userAddress: params.uid,
         jobType: params.jobType,
@@ -250,16 +254,22 @@ export default class Worker {
    * @param params MonitoringParams(trainId..).
    */
   private monitoringTrainContainer(name: string, params: types.MonitoringParams) {
+    const watch = this.watchJsonFile(params.logPath, async (value: Object) => {
+      await this.ainConnect.updateTrainingResult(params.trainId, params.userAddress, {
+        trainingLogs: value,
+      });
+    });
     Docker.containerLog(name, async (data: string) => {
       // Data handler
       await this.ainConnect.updateTrainingResult(params.trainId, params.userAddress, {
-        logs: {
+        containerLogs: {
           [String(Date.now())]: data,
         },
       });
     },
     async (err: Error) => {
       this.trainRunning = false;
+      watch.close();
       // End handler
       if (err) {
         await this.ainConnect.updateTrainingResult(params.trainId, params.userAddress, {
@@ -284,6 +294,29 @@ export default class Worker {
         log.error(`[-] Failed to send result about training - ${error.message}`);
       }
       await exec(`rm -rf ${params.workerRootPath}`);
+    });
+  }
+
+  watchJsonFile(jsonFilePath: string, callback: Function) {
+    fs.writeFileSync(jsonFilePath, '');
+    return fs.watch(jsonFilePath, async (event: string, filename: string) => {
+      let diffObject;
+      try {
+        const data = String(fs.readFileSync(jsonFilePath));
+        if (data === '') {
+          return;
+        }
+        const json = JSON.parse(data);
+
+        diffObject = diff(this.trainLogData, json);
+        this.trainLogData = json;
+        if (Object.keys(diffObject).length === 0) {
+          return;
+        }
+        await callback(diffObject);
+      } catch (err) {
+        log.error(`event: ${event}, filename: ${filename} - ${diffObject} - ${err}`);
+      }
     });
   }
 }

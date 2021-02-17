@@ -448,6 +448,7 @@ export default class AinConnect {
       });
     } catch (e) {
       result = {
+        status: 'failed',
         errMessage: e.message,
       };
     }

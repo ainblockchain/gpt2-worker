@@ -37,6 +37,7 @@
     "axios": "^0.21.0",
     "bip39": "^3.0.2",
     "commander": "^6.2.0",
+    "deep-object-diff": "^1.1.0",
     "dockerode": "^3.2.1",
     "express": "^4.17.1",
     "firebase": "^8.0.1",
