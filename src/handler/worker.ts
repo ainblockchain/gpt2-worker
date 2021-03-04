@@ -242,6 +242,7 @@ export default class Worker {
         status: 'running',
       };
     } catch (error) {
+      this.trainRunning = false;
       log.error(error);
       await exec(`rm -rf ${workerRootPath}`);
       throw error;
