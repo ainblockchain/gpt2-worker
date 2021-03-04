@@ -291,6 +291,11 @@ export default class Worker {
           })));
         log.debug(`[+] Train Result: ${(completed) ? 'completed' : 'failed'} - trainId: ${params.trainId}`);
       } catch (error) {
+        await this.ainConnect.updateTrainingResult(params.trainId,
+          params.userAddress, JSON.parse(JSON.stringify({
+            status: 'failed',
+            errMessage: 'Failed to train',
+          }))).catch(() => {});
         log.error(`[-] Failed to send result about training - ${error.message}`);
       }
       await exec(`rm -rf ${params.workerRootPath}`);
@@ -299,6 +304,7 @@ export default class Worker {
 
   watchJsonFile(jsonFilePath: string, callback: Function) {
     fs.writeFileSync(jsonFilePath, '');
+    this.trainLogData = {};
     return fs.watch(jsonFilePath, async (event: string, filename: string) => {
       let diffObject;
       try {
