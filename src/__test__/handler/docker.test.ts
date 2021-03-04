@@ -29,9 +29,10 @@ describe('handler/docker', () => {
     };
     await Docker.runContainerWithGpu(
       name,
-      image,
-      gpuDeviceNumber,
-      publishPorts,
+      image, {
+        gpuDeviceNumber,
+        publishPorts,
+      },
     );
 
     expect(result).toEqual({
@@ -41,8 +42,12 @@ describe('handler/docker', () => {
       },
       Env: [`NVIDIA_VISIBLE_DEVICES=${gpuDeviceNumber}`],
       Image: image,
+      Labels: {
+        comcom: '',
+      },
       HostConfig: {
         AutoRemove: true,
+        Binds: undefined,
         PortBindings: {
           [`${publishPorts[80]}/tcp`]: [{ HostPort: '80' }],
         },

@@ -20,8 +20,6 @@ export const STAGING_FIREBASE_CONFIG = {
   measurementId: 'G-8NBD57K71C',
 };
 
-export const PAYOUT_POOL_ADDR = '0x945bDFa911cf895Bca3F4b5B5816BcfDb5A1480b';
-
 export const THRESHOLD_AMOUNT = 100;
 
 export const CURRENT_PROTOCOL_VERSION = '0.5.0';
@@ -58,7 +56,7 @@ export function getAccountsBalancePath(address: string) {
 }
 
 export function getWorkerInfoPath(address: string) {
-  return `/worker/info/${address}`;
+  return `/worker_info/${address}`;
 }
 
 export function getInferencePath(address: string) {
@@ -79,4 +77,24 @@ export function getTransferValuePath(fromAddress: string, toAddress: string, req
 
 export function getUserTransactionsPath(address: string) {
   return `/user_transactions/${address}/`;
+}
+
+export function gettrainingPath(address: string) {
+  return `/training/${address}/`;
+}
+
+export function getTrainingResultPath(trainId: string, userAddress: string, workerAddress: string) {
+  return `/train_tasks/${userAddress}/${trainId}/response/${workerAddress}`;
+}
+
+export function getDatasetPath(uid: string, trainId: string, fileName: string) {
+  return `/trainData/${uid}/${trainId}/${fileName}`;
+}
+
+export function getModelUploadPath(trainId: string, address: string, fileName: string) {
+  return `/trainResult/${trainId}/${address}/${fileName}`;
+}
+
+export function getPoolAddrPath() {
+  return '/pool_addresses';
 }

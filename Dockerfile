@@ -7,7 +7,7 @@ ADD yarn.lock /server
 ADD package.json /server
 ADD ./tsconfig.json /server/tsconfig.json
 RUN npm install 
-RUN npm install -g typescript
+RUN npm install -g typescript@3.9
 ADD ./src /server/src
 
 WORKDIR /server
