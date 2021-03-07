@@ -1,3 +1,5 @@
+import { Storage } from '@google-cloud/storage';
+
 export const PROD_FIREBASE_CONFIG = {
   apiKey: 'AIzaSyCaNna60wsEWDYhAleGVj5jjp3-24GCtN0',
   authDomain: 'gpt2-ainetwork-prod.firebaseapp.com',
@@ -19,6 +21,9 @@ export const STAGING_FIREBASE_CONFIG = {
   appId: '1:1045334268091:web:c0490dfa3e8057a078f19e',
   measurementId: 'G-8NBD57K71C',
 };
+
+export const PROD_BUCKET_NAME = 'gpt2-ainetwork.appspot.com'; // @TODO Change to Prod Bucket Name.
+export const STAGING_BUCKET_NAME = 'gpt2-ainetwork.appspot.com';
 
 export const THRESHOLD_AMOUNT = 100;
 
@@ -92,9 +97,26 @@ export function getDatasetPath(uid: string, trainId: string, fileName: string) {
 }
 
 export function getModelUploadPath(trainId: string, address: string, fileName: string) {
-  return `/trainResult/${trainId}/${address}/${fileName}`;
+  return `trainResult/${trainId}/${address}/${fileName}`; // the path must not start with '/' (firebase Storage PATH)
 }
 
 export function getPoolAddrPath() {
   return '/pool_addresses';
+}
+
+export async function existsBucket(bucketName: string) {
+  try {
+    const storage = new Storage();
+    const results = await storage.getBuckets();
+    const [buckets] = results;
+    let result = false;
+    buckets.forEach((bucket) => {
+      if (bucket.name === bucketName) {
+        result = true;
+      }
+    });
+    return result;
+  } catch (err) {
+    return false;
+  }
 }

@@ -42,9 +42,6 @@ describe('handler/docker', () => {
       },
       Env: [`NVIDIA_VISIBLE_DEVICES=${gpuDeviceNumber}`],
       Image: image,
-      Labels: {
-        comcom: '',
-      },
       HostConfig: {
         AutoRemove: true,
         Binds: undefined,

@@ -4,6 +4,8 @@ import * as types from '../common/types';
 export default class Docker {
   private static dockerode = new Dockerode({ socketPath: '/var/run/docker.sock' });
 
+  private static streamDict = {};
+
   /**
    * Run Docker GPU Container.
    * @param name - Container Name.
@@ -14,7 +16,7 @@ export default class Docker {
     image: string,
     option: types.CreateContainerOption) {
     // Pull Docker Container Image.
-    await Docker.pullImage(image);
+    await Docker.pullImage(name, image);
 
     const env = (option.gpuDeviceNumber) ? [`NVIDIA_VISIBLE_DEVICES=${option.gpuDeviceNumber}`] : [];
     const createContainerOptions = {
@@ -22,9 +24,7 @@ export default class Docker {
       ExposedPorts: {},
       Env: (option.env) ? env.concat(option.env) : env,
       Image: image,
-      Labels: {
-        comcom: '',
-      },
+      Labels: option.labels,
       HostConfig: {
         AutoRemove: true,
         Binds: option.binds,
@@ -56,26 +56,41 @@ export default class Docker {
    * Pull Docker Image.
    * @param image - Docker Image Path.
    */
-  static async pullImage(image: string) {
+  static async pullImage(name: string, image: string) {
     if (image.split(':').length === 1) {
       image += ':latest';
     }
     return new Promise<boolean>((resolve, reject) => {
       Docker.dockerode.pull(image, async (err: any, stream: any) => {
+        Docker.streamDict[name] = stream;
         function onFinished() {
           if (err) {
+            delete Docker.streamDict[name];
             reject(err);
           } else {
+            if (!Docker.streamDict[name]) {
+              reject(new Error('canceled'));
+              return;
+            }
+            delete Docker.streamDict[name];
             resolve(true);
           }
         }
         if (err) {
+          delete Docker.streamDict[name];
           reject(err);
         } else {
           await Docker.dockerode.modem.followProgress(stream, onFinished);
         }
       });
     });
+  }
+
+  static cancelPullImage(name: string) {
+    if (Docker.streamDict[name]) {
+      Docker.streamDict[name].destroy();
+      delete Docker.streamDict[name];
+    }
   }
 
   /**
@@ -85,6 +100,24 @@ export default class Docker {
   static async killContainer(name: string) {
     const containerHandler = Docker.dockerode.getContainer(name);
     await containerHandler.remove({ force: true });
+  }
+
+  static async execContainer(name:string, command: string) {
+    const containerHandler = Docker.dockerode.getContainer(name);
+    const exec = await containerHandler.exec({
+      Cmd: ['/bin/bash', '-c', command],
+      AttachStderr: true,
+      AttachStdout: true,
+    });
+    const stream = await exec.start({
+      stdin: true,
+    });
+    return new Promise<any>((resolve, _reject) => {
+      stream
+        .on('end', () => {
+          resolve(true);
+        });
+    });
   }
 
   /**

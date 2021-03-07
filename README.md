@@ -79,7 +79,8 @@ $ sudo docker pull ainblockchain/worker-docker
 After that, run AIN Worker with the command below:
 
 ```
-$ sudo docker run -l comcom -d --name ain-worker \
+$ sudo docker run -l comcom -d --name ${WORKER_NAME} --gpus "device={GPU_DEVICE_NUMBER ex 0}' \
+ -e WORKER_NAME=${WORKER_NAME} 
  -v {/PATH/TO/CONFIG ROOT PATH}:/server/shared \
  -v /var/run/docker.sock:/var/run/docker.sock \
  --network host ainblockchain/worker-docker
@@ -133,7 +134,7 @@ After that, once the following message is displayed, the model is ready and is b
 To terminate the AIN Worker, enter the following command:
 
 ```
-$ sudo docker rm -f $(sudo docker ps -f "label=comcom" -q -a)
+$ sudo docker rm -f $(sudo docker ps -f "label=${WORKER_NAME}" -q -a)
 $ sudo rm -rf {/PATH/TO/CONFIG ROOT PATH}/train
 ```
 

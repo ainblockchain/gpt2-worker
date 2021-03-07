@@ -8,6 +8,8 @@ export const SHARED_ROOT_PATH = './shared';
 
 export const ENV_PATH = `${SHARED_ROOT_PATH}/env.json`;
 
+export const { WORKER_NAME } = process.env;
+
 let env;
 try {
   env = JSON.parse(String(fs.readFileSync(ENV_PATH)));
@@ -39,7 +41,9 @@ export const START_TIME = Date.now();
 
 export const validateConstants = () => {
   const gpuDeviceRe = /^\d*(,\d+)*\d*$/;
-  if (!CONFIG_ROOT_PATH) {
+  if (!WORKER_NAME || WORKER_NAME === '') {
+    throw new Error('Invalid "NAME"');
+  } else if (!CONFIG_ROOT_PATH) {
     throw new Error('CONFIG_ROOT_PATH Not Exists');
   } else if (!ETH_ADDRESS || !isValidAddress(ETH_ADDRESS)) {
     throw new Error(`Invalid "ETH_ADDRESS" - ${ETH_ADDRESS}`);

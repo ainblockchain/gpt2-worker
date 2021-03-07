@@ -7,7 +7,9 @@ import * as types from '../common/types';
 import Docker from './docker';
 import * as constants from '../common/constants';
 import AinConnect from '../interface/ainConnect';
-import { THRESHOLD_AMOUNT } from '../interface/firebaseInfo';
+import {
+  THRESHOLD_AMOUNT, existsBucket, PROD_BUCKET_NAME, STAGING_BUCKET_NAME,
+} from '../interface/firebaseInfo';
 
 const log = Logger.createLogger('handler/worker');
 
@@ -23,7 +25,7 @@ export default class Worker {
 
   protected modelInfo: types.ModelInfo;
 
-  private trainRunning: boolean;
+  private trainInfo: types.TrainInfo;
 
   static workerInfoUpdateMs = 20 * 1000;
 
@@ -43,7 +45,9 @@ export default class Worker {
     this.totalRewardAmount = 0;
     this.totalPayoutAmount = 0;
     this.ainConnect = new AinConnect(constants.AIN_PRIVATE_KEY, test);
-    this.trainRunning = false;
+    this.trainInfo = {
+      running: false,
+    };
   }
 
   /**
@@ -65,7 +69,15 @@ export default class Worker {
     fs.truncateSync(constants.ENV_PATH, 0);
     fs.appendFileSync(constants.ENV_PATH, JSON.stringify(newEnv, null, 2));
 
-    if (!constants.TRAIN_MODE) {
+    if (constants.TRAIN_MODE) {
+      const existsBucketResult = await existsBucket(
+        (constants.NODE_ENV === 'prod')
+          ? PROD_BUCKET_NAME : STAGING_BUCKET_NAME,
+      );
+      if (!existsBucketResult) {
+        throw new Error('Invalid Service.json');
+      }
+    } else {
       // Get AI Model Information on Firebase Database.
       this.modelInfo = await this.ainConnect.getModelInfo();
       const selectModelInfo = this.modelInfo[constants.MODEL_NAME!];
@@ -80,6 +92,9 @@ export default class Worker {
           [constants.JOB_PORT!]: String(selectModelInfo.port),
         },
         gpuDeviceNumber: constants.GPU_DEVICE_NUMBER!,
+        labels: {
+          [constants.WORKER_NAME!]: '',
+        },
       });
       log.info('[+] Success to create Job Container.');
       this.trainLogData = {};
@@ -100,9 +115,11 @@ export default class Worker {
 
     // Set Worker Information on firebase database.
     setInterval(async () => {
+      const gpuInfo = await this.getGpuInfo();
       await this.ainConnect.setWorkerInfo({
         jobType: constants.MODEL_NAME,
         type: (constants.MODEL_NAME) ? 'inference' : 'training',
+        gpuInfo,
       });
     }, Worker.workerInfoUpdateMs);
 
@@ -114,7 +131,8 @@ export default class Worker {
 
     log.info('[+] Start to listen Job');
     if (constants.TRAIN_MODE) {
-      this.ainConnect.listenForTrainingRequest(this.jobTrainingHandler);
+      this.ainConnect.listenForTrainingRequest(this.jobTrainingHandler,
+        this.jobCancelTrainingHandler);
     } else {
       this.ainConnect.listenForInferenceRequest(this.jobInferenceHandler);
     }
@@ -206,10 +224,14 @@ export default class Worker {
    * Request to ML training Container.
   */
   public jobTrainingHandler = async (trainId: string, params: types.trainingParams) => {
-    if (this.trainRunning) {
+    if (this.trainInfo.running) {
       throw new Error('Other task is already in progress');
     }
-    this.trainRunning = true;
+    this.trainInfo = {
+      userAddr: params.userAddress,
+      trainId,
+      running: true,
+    };
     const workerRootPath = `${constants.SHARED_ROOT_PATH}/train/${trainId}`;
     const containerRootPath = `/train/${trainId}`;
     const containerName = 'worker-train';
@@ -242,9 +264,42 @@ export default class Worker {
         status: 'running',
       };
     } catch (error) {
-      this.trainRunning = false;
+      this.trainInfo = {
+        running: false,
+      };
       log.error(error);
       await exec(`rm -rf ${workerRootPath}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Request to ML training Container.
+  */
+  public jobCancelTrainingHandler = async (
+    cancelId: string, params: types.CancelTrainingParams,
+  ) => {
+    try {
+      if (this.trainInfo.trainId !== params.trainId) {
+        throw new Error('Not training');
+      }
+      if (this.trainInfo.userAddr !== params.userAddress) {
+        throw new Error('Not permission');
+      }
+      this.trainInfo.cancelId = cancelId;
+      this.trainInfo.needSave = params.needSave;
+      if (Docker.existContainer(params.trainId)) {
+        await Docker.execContainer(params.trainId,
+          "ps -aux | grep -m 1 python | awk '{print $2}' | xargs -I{} kill -9 {}");
+      } else {
+        Docker.cancelPullImage(params.trainId);
+      }
+      return {
+        startedAt: Date.now(),
+        status: 'success',
+      };
+    } catch (error) {
+      log.error(error);
       throw error;
     }
   }
@@ -269,7 +324,9 @@ export default class Worker {
       });
     },
     async (err: Error) => {
-      this.trainRunning = false;
+      this.trainInfo = {
+        running: false,
+      };
       watch.close();
       // End handler
       if (err) {
@@ -280,17 +337,23 @@ export default class Worker {
       }
 
       try {
-        const completed = fs.existsSync(params.outputLocalPath);
-        if (completed) {
+        let status = 'failed';
+        const existModel = fs.existsSync(params.outputLocalPath);
+        if (this.trainInfo.cancelId) {
+          status = (existModel && this.trainInfo.needSave) ? 'completed' : 'canceled';
+        } else if (existModel) {
+          status = 'completed';
+        }
+        if (status === 'completed') {
           await this.ainConnect.uploadFile(params.uploadModelPath, params.outputLocalPath);
         }
         await this.ainConnect.updateTrainingResult(params.trainId,
           params.userAddress, JSON.parse(JSON.stringify({
             modelName: `${params.jobType}.mar`,
-            status: (completed) ? 'completed' : 'failed',
-            errMessage: (completed) ? undefined : 'Failed to train',
+            status,
+            errMessage: (status === 'failed') ? 'Failed to train' : undefined,
           })));
-        log.debug(`[+] Train Result: ${(completed) ? 'completed' : 'failed'} - trainId: ${params.trainId}`);
+        log.debug(`[+] Train Result: ${status} - trainId: ${params.trainId}`);
       } catch (error) {
         await this.ainConnect.updateTrainingResult(params.trainId,
           params.userAddress, JSON.parse(JSON.stringify({
@@ -325,5 +388,22 @@ export default class Worker {
         log.error(`event: ${event}, filename: ${filename} - ${diffObject} - ${err}`);
       }
     });
+  }
+
+  async getGpuInfo(): Promise<types.GPUInfo> {
+    const command = 'nvidia-smi --query-gpu=name,driver_version,memory.used,memory.total --format=csv,noheader';
+    const { stdout } = await exec(command);
+    const infoList = stdout.split('\n');
+    infoList.pop();
+    const result = {};
+    for (const info of infoList) {
+      const dataList = info.split(',').map((item: string) => item.replace(' ', ''));
+      result[dataList[0]] = {
+        driverVersion: dataList[1],
+        memoryUsed: dataList[2],
+        memoryTotal: dataList[3],
+      };
+    }
+    return result;
   }
 }
