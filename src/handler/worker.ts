@@ -87,7 +87,7 @@ export default class Worker {
 
       // Create Container for ML Job.
       log.info('[+] Start to create Job Container. It can take a long time.');
-      await Docker.runContainerWithGpu(constants.MODEL_NAME!, selectModelInfo.imagePath, {
+      await Docker.runContainerWithGpu(`${constants.WORKER_NAME}${constants.MODEL_NAME}`!, selectModelInfo.imagePath, {
         publishPorts: {
           [constants.JOB_PORT!]: String(selectModelInfo.port),
         },
@@ -349,8 +349,9 @@ export default class Worker {
         }
         await this.ainConnect.updateTrainingResult(params.trainId,
           params.userAddress, JSON.parse(JSON.stringify({
-            modelName: `${params.jobType}.mar`,
+            modelName: (status === 'completed') ? `${params.jobType}.mar` : undefined,
             status,
+            isCancelDone: !!(this.trainInfo.cancelId),
             errMessage: (status === 'failed') ? 'Failed to train' : undefined,
           })));
         log.debug(`[+] Train Result: ${status} - trainId: ${params.trainId}`);

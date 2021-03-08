@@ -445,6 +445,7 @@ export default class AinConnect {
     } catch (e) {
       if (e.message === 'canceled') {
         result = {
+          isCancelDone: true,
           status: 'canceled',
         };
       } else {
