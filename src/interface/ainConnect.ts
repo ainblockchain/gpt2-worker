@@ -427,13 +427,18 @@ export default class AinConnect {
     log.debug(`[+] Request to train(id: ${trainId}) - params: ${JSON.stringify(value, null, 4)}`);
 
     try {
-      const jobTypeInfo = await this.getJobTypeInfo(value.jobType);
-      if (!jobTypeInfo || jobTypeInfo.type !== 'training') {
-        throw new Error('Invalid Params');
-      }
       if (value.type === 'cancel') {
-        result = await cancelMethod(trainId, value.trainId, value.uid);
+        result = await cancelMethod(trainId, {
+          trainId: value.trainId,
+          userAddress: value.uid,
+          needSave: value.needSave,
+        });
       } else {
+        const jobTypeInfo = await this.getJobTypeInfo(value.jobType);
+        if (!jobTypeInfo || jobTypeInfo.type !== 'training') {
+          throw new Error('Invalid Params');
+        }
+
         result = await startMethod(trainId, {
           ...value,
           datasetPath: firebaseInfo.getDatasetPath(value.uid, trainId, value.fileName),

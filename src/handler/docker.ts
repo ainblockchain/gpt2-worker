@@ -125,7 +125,12 @@ export default class Docker {
    * @param name - Container Name.
    */
   static existContainer(name: string) {
-    return !!Docker.dockerode.getContainer(name);
+    try {
+      const result = Docker.dockerode.getContainer(name);
+      return !!result;
+    } catch (_) {
+      return false;
+    }
   }
 
   /**

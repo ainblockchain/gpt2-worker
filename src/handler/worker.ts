@@ -228,20 +228,26 @@ export default class Worker {
       throw new Error('Other task is already in progress');
     }
     this.trainInfo = {
-      userAddr: params.userAddress,
+      userAddr: params.uid,
       trainId,
       running: true,
     };
     const workerRootPath = `${constants.SHARED_ROOT_PATH}/train/${trainId}`;
     const containerRootPath = `/train/${trainId}`;
-    const containerName = `${constants.WORKER_NAME}${constants.MODEL_NAME}`!;
+    const containerName = `train${constants.WORKER_NAME!}`;
     await exec(`mkdir -p ${workerRootPath}`);
     try {
       await this.ainConnect.downloadFile(params.datasetPath, `${workerRootPath}/${params.fileName}`);
       log.debug(`[+] success to download file (id: ${trainId})`);
+      if (this.trainInfo.cancelId) {
+        throw new Error('canceled');
+      }
       // Create Container for training
       await Docker.runContainerWithGpu(containerName, params.imagePath, {
         gpuDeviceNumber: constants.GPU_DEVICE_NUMBER,
+        labels: {
+          [constants.WORKER_NAME!]: '',
+        },
         env: [`epochs=${params.epochs}`,
           `jobType=${params.jobType}`,
           `mountedDataPath=${containerRootPath}/${params.fileName}`,
@@ -280,16 +286,17 @@ export default class Worker {
     cancelId: string, params: types.CancelTrainingParams,
   ) => {
     try {
-      if (this.trainInfo.trainId !== params.trainId) {
+      if (!this.trainInfo.trainId || this.trainInfo.trainId !== params.trainId) {
         throw new Error('Not training');
       }
-      if (this.trainInfo.userAddr !== params.userAddress) {
+      if (!params.userAddress || this.trainInfo.userAddr !== params.userAddress) {
         throw new Error('Not permission');
       }
       this.trainInfo.cancelId = cancelId;
       this.trainInfo.needSave = params.needSave;
-      if (Docker.existContainer(params.trainId)) {
-        await Docker.execContainer(params.trainId,
+      const containerName = `train${constants.WORKER_NAME!}`;
+      if (Docker.existContainer(containerName)) {
+        await Docker.execContainer(containerName,
           "ps -aux | grep -m 1 python | awk '{print $2}' | xargs -I{} kill -9 {}");
       } else {
         Docker.cancelPullImage(params.trainId);
@@ -324,6 +331,7 @@ export default class Worker {
       });
     },
     async (err: Error) => {
+      const { cancelId, needSave } = this.trainInfo;
       this.trainInfo = {
         running: false,
       };
@@ -339,8 +347,8 @@ export default class Worker {
       try {
         let status = 'failed';
         const existModel = fs.existsSync(params.outputLocalPath);
-        if (this.trainInfo.cancelId) {
-          status = (existModel && this.trainInfo.needSave) ? 'completed' : 'canceled';
+        if (cancelId) {
+          status = (existModel && needSave) ? 'completed' : 'canceled';
         } else if (existModel) {
           status = 'completed';
         }
@@ -351,7 +359,7 @@ export default class Worker {
           params.userAddress, JSON.parse(JSON.stringify({
             modelName: (status === 'completed') ? `${params.jobType}.mar` : undefined,
             status,
-            isCancelDone: !!(this.trainInfo.cancelId),
+            isCancelDone: !!(cancelId),
             errMessage: (status === 'failed') ? 'Failed to train' : undefined,
           })));
         log.debug(`[+] Train Result: ${status} - trainId: ${params.trainId}`);
