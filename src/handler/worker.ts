@@ -87,7 +87,7 @@ export default class Worker {
 
       // Create Container for ML Job.
       log.info('[+] Start to create Job Container. It can take a long time.');
-      await Docker.runContainerWithGpu(`${constants.WORKER_NAME}${constants.MODEL_NAME}`!, selectModelInfo.imagePath, {
+      await Docker.runContainerWithGpu(constants.MODEL_NAME!, selectModelInfo.imagePath, {
         publishPorts: {
           [constants.JOB_PORT!]: String(selectModelInfo.port),
         },
@@ -234,7 +234,7 @@ export default class Worker {
     };
     const workerRootPath = `${constants.SHARED_ROOT_PATH}/train/${trainId}`;
     const containerRootPath = `/train/${trainId}`;
-    const containerName = 'worker-train';
+    const containerName = `${constants.WORKER_NAME}${constants.MODEL_NAME}`!;
     await exec(`mkdir -p ${workerRootPath}`);
     try {
       await this.ainConnect.downloadFile(params.datasetPath, `${workerRootPath}/${params.fileName}`);
