@@ -109,14 +109,8 @@ export default class Docker {
       AttachStderr: true,
       AttachStdout: true,
     });
-    const stream = await exec.start({
+    await exec.start({
       stdin: true,
-    });
-    return new Promise<any>((resolve, _reject) => {
-      stream
-        .on('end', () => {
-          resolve(true);
-        });
     });
   }
 
