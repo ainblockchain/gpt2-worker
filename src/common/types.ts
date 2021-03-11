@@ -82,14 +82,12 @@ export type MonitoringParams = {
 
 export type CancelTrainingParams = {
   trainId: string;
-  userAddress: string;
   needSave: boolean;
 }
 
 export type TrainInfo = {
   running: boolean;
   trainId?: string;
-  userAddr?: string;
   cancelId?: string;
   needSave?: boolean;
 }

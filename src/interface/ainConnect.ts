@@ -430,7 +430,6 @@ export default class AinConnect {
       if (value.type === 'cancel') {
         result = await cancelMethod(trainId, {
           trainId: value.trainId,
-          userAddress: value.uid,
           needSave: value.needSave,
         });
       } else {

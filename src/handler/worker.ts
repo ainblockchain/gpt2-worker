@@ -228,7 +228,6 @@ export default class Worker {
       throw new Error('Other task is already in progress');
     }
     this.trainInfo = {
-      userAddr: params.uid,
       trainId,
       running: true,
     };
@@ -288,9 +287,6 @@ export default class Worker {
     try {
       if (!this.trainInfo.trainId || this.trainInfo.trainId !== params.trainId) {
         throw new Error('Not training');
-      }
-      if (!params.userAddress || this.trainInfo.userAddr !== params.userAddress) {
-        throw new Error('Not permission');
       }
       this.trainInfo.cancelId = cancelId;
       this.trainInfo.needSave = params.needSave;
@@ -359,7 +355,7 @@ export default class Worker {
           params.userAddress, JSON.parse(JSON.stringify({
             modelName: (status === 'completed') ? `${params.jobType}.mar` : undefined,
             status,
-            isCancelDone: !!(cancelId),
+            isCancelDone: (cancelId) ? true : undefined,
             errMessage: (status === 'failed') ? 'Failed to train' : undefined,
           })));
         log.debug(`[+] Train Result: ${status} - trainId: ${params.trainId}`);
