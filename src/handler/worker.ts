@@ -297,13 +297,8 @@ export default class Worker {
       } else {
         Docker.cancelPullImage(params.trainId);
       }
-      return {
-        startedAt: Date.now(),
-        status: 'success',
-      };
     } catch (error) {
       log.error(error);
-      throw error;
     }
   }
 
@@ -355,7 +350,7 @@ export default class Worker {
           params.userAddress, JSON.parse(JSON.stringify({
             modelName: (status === 'completed') ? `${params.jobType}.mar` : undefined,
             status,
-            isCancelDone: (cancelId) ? true : undefined,
+            cancelId,
             errMessage: (status === 'failed') ? 'Failed to train' : undefined,
           })));
         log.debug(`[+] Train Result: ${status} - trainId: ${params.trainId}`);

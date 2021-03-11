@@ -428,24 +428,24 @@ export default class AinConnect {
 
     try {
       if (value.type === 'cancel') {
-        result = await cancelMethod(trainId, {
+        await cancelMethod(trainId, {
           trainId: value.trainId,
           needSave: value.needSave,
         });
-      } else {
-        const jobTypeInfo = await this.getJobTypeInfo(value.jobType);
-        if (!jobTypeInfo || jobTypeInfo.type !== 'training') {
-          throw new Error('Invalid Params');
-        }
-
-        result = await startMethod(trainId, {
-          ...value,
-          datasetPath: firebaseInfo.getDatasetPath(value.uid, trainId, value.fileName),
-          imagePath: jobTypeInfo.imagePath,
-          uploadModelPath: firebaseInfo.getModelUploadPath(trainId,
-            this.getAddress(), `${value.jobType}.mar`),
-        });
+        return;
       }
+      const jobTypeInfo = await this.getJobTypeInfo(value.jobType);
+      if (!jobTypeInfo || jobTypeInfo.type !== 'training') {
+        throw new Error('Invalid Params');
+      }
+
+      result = await startMethod(trainId, {
+        ...value,
+        datasetPath: firebaseInfo.getDatasetPath(value.uid, trainId, value.fileName),
+        imagePath: jobTypeInfo.imagePath,
+        uploadModelPath: firebaseInfo.getModelUploadPath(trainId,
+          this.getAddress(), `${value.jobType}.mar`),
+      });
     } catch (e) {
       if (e.message === 'canceled') {
         result = {
