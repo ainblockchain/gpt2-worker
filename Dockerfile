@@ -22,4 +22,6 @@ ADD yarn.lock /server
 RUN npm install --only=prod
 COPY --from=build /server/dist /server/dist
 
+ENV GOOGLE_APPLICATION_CREDENTIALS /server/shared/service.json
+
 CMD ["node", "dist/index.js", "serve"]

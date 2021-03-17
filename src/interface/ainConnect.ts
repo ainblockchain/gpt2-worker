@@ -8,7 +8,7 @@ import 'firebase/functions';
 import 'firebase/storage';
 import * as https from 'https';
 import * as fs from 'fs';
-import * as util from 'util';
+import { Storage } from '@google-cloud/storage';
 import * as constants from '../common/constants';
 import * as firebaseInfo from './firebaseInfo';
 import * as types from '../common/types';
@@ -17,8 +17,6 @@ import Logger from '../common/logger';
 // Polyfills required for Firebase
 // eslint-disable-next-line import/no-unresolved
 (global as any).XMLHttpRequest = require('xhr2');
-
-const readFile = util.promisify(fs.readFile);
 
 const log = Logger.createLogger('interface/ainConnect');
 
@@ -398,19 +396,13 @@ export default class AinConnect {
    * @param filePath File Path to Upload.
    */
   async uploadFile(storagePath: string, filePath: string) {
-    const file = await readFile(filePath);
+    const bucketName = (constants.NODE_ENV === 'staging')
+      ? firebaseInfo.STAGING_BUCKET_NAME : firebaseInfo.PROD_BUCKET_NAME;
+    const storage = new Storage();
+    const myBucket = storage.bucket(bucketName);
 
-    return new Promise((resolve, reject) => {
-      const uploadTask = this.app.storage().ref(storagePath).put(file);
-      uploadTask.on('STATE_CHANGED', undefined,
-        (err) => {
-        // Error Handler
-          reject(err);
-        },
-        () => {
-          // Complate Handler
-          resolve(true);
-        });
+    await myBucket.upload(filePath, {
+      destination: storagePath,
     });
   }
 
@@ -418,16 +410,16 @@ export default class AinConnect {
    * Listen For trainingRequest
    * @param method
    */
-  async listenForTrainingRequest(method: Function) {
+  async listenForTrainingRequest(startMethod: Function, cancelMethod: Function) {
     this.app.database()
       .ref(firebaseInfo.gettrainingPath(this.keyInfo.address))
-      .on('child_added', this.trainingListenHandler(method));
+      .on('child_added', this.trainingListenHandler(startMethod, cancelMethod));
   }
 
   /**
    * Handler for training.
    */
-  private trainingListenHandler = (method: Function) => async (
+  private trainingListenHandler = (startMethod: Function, cancelMethod: Function) => async (
     data: firebase.database.DataSnapshot) => {
     const trainId = data.key as string;
     const value = data.val();
@@ -435,11 +427,19 @@ export default class AinConnect {
     log.debug(`[+] Request to train(id: ${trainId}) - params: ${JSON.stringify(value, null, 4)}`);
 
     try {
+      if (value.type === 'cancel') {
+        await cancelMethod(trainId, {
+          trainId: value.trainId,
+          needSave: value.needSave,
+        });
+        return;
+      }
       const jobTypeInfo = await this.getJobTypeInfo(value.jobType);
       if (!jobTypeInfo || jobTypeInfo.type !== 'training') {
         throw new Error('Invalid Params');
       }
-      result = await method(trainId, {
+
+      result = await startMethod(trainId, {
         ...value,
         datasetPath: firebaseInfo.getDatasetPath(value.uid, trainId, value.fileName),
         imagePath: jobTypeInfo.imagePath,
@@ -447,10 +447,17 @@ export default class AinConnect {
           this.getAddress(), `${value.jobType}.mar`),
       });
     } catch (e) {
-      result = {
-        status: 'failed',
-        errMessage: e.message,
-      };
+      if (e.message === 'canceled') {
+        result = {
+          isCancelDone: true,
+          status: 'canceled',
+        };
+      } else {
+        result = {
+          status: 'failed',
+          errMessage: e.message,
+        };
+      }
     }
     try {
       await this.updateTrainingResult(trainId, value.uid, {

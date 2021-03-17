@@ -1,8 +1,17 @@
 export type EnvType = 'prod' | 'staging';
 
+export type GPUInfo = {
+  [gpuName: string]: {
+    driverVersion: string;
+    memoryUsed: string;
+    memoryTotal: string;
+  }
+}
+
 export type WorkerInfo = {
   jobType?: string;
   type: 'inference' | 'training';
+  gpuInfo: GPUInfo;
 }
 
 export type JobTypeInfo = {
@@ -12,7 +21,7 @@ export type JobTypeInfo = {
   imagePath: string;
   port: number;
   framework: 'tensorflow' | 'pytorch';
-  type: 'inference' | 'training',
+  type: 'inference' | 'training';
 }
 
 export type ModelInfo = {
@@ -50,6 +59,7 @@ export type trainingParams = {
   datasetPath: string;
   uploadModelPath: string;
   imagePath: string;
+  userAddress: string;
 }
 
 export type CreateContainerOption = {
@@ -57,6 +67,7 @@ export type CreateContainerOption = {
   publishPorts?: { [externalPort: string]: string };
   env?: string[];
   binds?: string[];
+  labels?: {[key: string]: string};
 }
 
 export type MonitoringParams = {
@@ -67,4 +78,16 @@ export type MonitoringParams = {
   trainId: string;
   uploadModelPath: string;
   outputLocalPath: string;
+}
+
+export type CancelTrainingParams = {
+  trainId: string;
+  needSave: boolean;
+}
+
+export type TrainInfo = {
+  running: boolean;
+  trainId?: string;
+  cancelId?: string;
+  needSave?: boolean;
 }
