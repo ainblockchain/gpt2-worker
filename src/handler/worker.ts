@@ -91,7 +91,7 @@ export default class Worker {
     }
     const containerName = `inference${constants.WORKER_NAME}`;
     // Create Container for ML Job.
-    log.info('[+] Start to create Job Container. It can take a long time.');
+    log.debug('[+] Start to create Job Container. It can take a long time.');
     await Docker.runContainer(containerName, selectModelInfo.imagePath, {
       publishPorts: {
         [constants.INFERENCE_CONTAINER_PORT!]: String(selectModelInfo.port),
@@ -101,7 +101,7 @@ export default class Worker {
         [constants.WORKER_NAME!]: '',
       },
     });
-    log.info('[+] Success to create Job Container.');
+    log.debug('[+] Success to create Job Container.');
     this.trainLogData = {};
     // Check AI Model container by calling health API.
     let health = false;
@@ -170,12 +170,12 @@ export default class Worker {
     if (params.type === 'REWARD_JOB') {
       this.totalRewardAmount += params.value;
       if (constants.START_TIME < params.timestamp) {
-        log.info(`[+] Current AIN Total Reward balance: ${this.totalRewardAmount} ain (+ ${params.value})`);
+        log.debug(`[+] Current AIN Total Reward balance: ${this.totalRewardAmount} ain (+ ${params.value})`);
       }
     } else if (params.type === 'PAYOUT_CONFIRMED') {
       this.totalPayoutAmount += params.value;
       if (constants.START_TIME < params.timestamp) {
-        log.info(`[+] Current AIN Total Payout balance: ${this.totalPayoutAmount} ain (+ ${params.value})`);
+        log.debug(`[+] Current AIN Total Payout balance: ${this.totalPayoutAmount} ain (+ ${params.value})`);
       }
     }
   }
@@ -261,7 +261,7 @@ export default class Worker {
       this.trainInfo = {
         running: false,
       };
-      log.error(error);
+      log.error(`[-] trainHandler - ${error.message}`);
       await util.exec(`rm -rf ${workerRootPath}`);
       throw error;
     }
@@ -287,7 +287,7 @@ export default class Worker {
         Docker.cancelPullImage(params.trainId);
       }
     } catch (error) {
-      log.error(error);
+      log.error(`[-] cancelTrainHandler - ${error.message}`);
     }
   }
 
