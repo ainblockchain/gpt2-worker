@@ -1,5 +1,3 @@
-export type EnvType = 'prod' | 'staging';
-
 export type GPUInfo = {
   [gpuName: string]: {
     driverVersion: string;

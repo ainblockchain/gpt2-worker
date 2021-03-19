@@ -1,6 +1,7 @@
 import { Storage } from '@google-cloud/storage';
+import { NODE_ENV } from '../common/constants';
 
-export const PROD_FIREBASE_CONFIG = {
+export const FIREBASE_CONFIG = (NODE_ENV === 'prod') ? {
   apiKey: 'AIzaSyCaNna60wsEWDYhAleGVj5jjp3-24GCtN0',
   authDomain: 'gpt2-ainetwork-prod.firebaseapp.com',
   databaseURL: 'https://gpt2-ainetwork-prod.firebaseio.com',
@@ -9,9 +10,7 @@ export const PROD_FIREBASE_CONFIG = {
   messagingSenderId: '983388933112',
   appId: '1:983388933112:web:a199871d763bcdb59e240d',
   measurementId: 'G-CMS0JDQQB6',
-};
-
-export const STAGING_FIREBASE_CONFIG = {
+} : {
   apiKey: 'AIzaSyA_ss5fiOD6bckPQk7qnb_Ruwd29OVWXE8',
   authDomain: 'gpt2-ainetwork.firebaseapp.com',
   databaseURL: 'https://gpt2-ainetwork.firebaseio.com',
@@ -22,10 +21,10 @@ export const STAGING_FIREBASE_CONFIG = {
   measurementId: 'G-8NBD57K71C',
 };
 
-export const PROD_BUCKET_NAME = 'gpt2-ainetwork.appspot.com'; // @TODO Change to Prod Bucket Name.
-export const STAGING_BUCKET_NAME = 'gpt2-ainetwork.appspot.com';
+// @TODO Change to Prod Bucket Name.
+export const BUCKET_NAME = (NODE_ENV) ? 'gpt2-ainetwork.appspot.com' : 'gpt2-ainetwork.appspot.com';
 
-export const THRESHOLD_AMOUNT = 100;
+export const THRESHOLD_PAYOUT_AMOUNT = 100;
 
 export const CURRENT_PROTOCOL_VERSION = '0.5.0';
 
