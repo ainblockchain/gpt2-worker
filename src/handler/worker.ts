@@ -106,7 +106,7 @@ export default class Worker {
     // Check AI Model container by calling health API.
     let health = false;
     for (let cnt = 0; cnt < Worker.healthCheckMaxCnt; cnt += 1) {
-      health = await this.healthCheckContainer(containerName);
+      health = await this.healthCheckContainer(constants.INFERENCE_MODEL_NAME);
       if (health) {
         break;
       }

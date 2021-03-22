@@ -30,7 +30,10 @@ export async function delay(ms: number) {
   return result;
 }
 
-export async function editJsonFile(filePath: string, jsonData: Object) {
+export function editJsonFile(filePath: string, jsonData: Object) {
+  if (!fs.existsSync(filePath)) {
+    fs.writeFileSync(filePath, '');
+  }
   fs.truncateSync(filePath, 0);
   fs.appendFileSync(filePath, JSON.stringify(jsonData, null, 2));
 }

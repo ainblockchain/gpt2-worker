@@ -77,18 +77,19 @@ $ sudo docker pull ainblockchain/worker-docker
 After that, run AIN Worker with the command below:
 
 ```
-$ docker run -l ${WORKER_NAME} -d --name ${WORKER_NAME} --gpus '"device=${GPU_DEVICE_NUMBER ex. 0}"' \
+$ docker run -l ${WORKER_NAME} -d --restart unless-stopped --name ${WORKER_NAME} --gpus "\"device=${GPU_DEVICE_NUMBER ex. 0,1}\"" \
  -e WORKER_NAME=${WORKER_NAME} \
  -e ETH_ADDRESS=${ETH_ADDRESS} \
  -e GPU_DEVICE_NUMBER=${GPU_DEVICE_NUMBER} \
  [-e INFERENCE_MODEL_NAME=${INFERENCE_MODEL_NAME} \ ]  // Only inference mode.
- [-e SERVICE_JSON=`cat ${SERVICE_JSON_PATH}` \ ]        // Only train mode.
+ [-v SERVICE_JSON_PATH:/server/shared/service.json \ ]        // Only train mode.
  -v /ain-worker/${WORKER_NAME}:/server/shared \
  -v /var/run/docker.sock:/var/run/docker.sock \
  --network host ainblockchain/worker-docker
 ```
 - (Optional Env) INFERENCE_CONTAINER_PORT: default = 7777
 - (Optional Env) ENABLE_AUTO_PAYOUT: default = true
+- (Optional Env) SLACK_WEBHOOK_URL: default = null
 
 **/ain-worker** contains the path to the config file that contains the parameters required to run a worker. After creating a file in the form below, replace **/ain-worker** with the path of the file. After successfully running a worker, keep the config file safe, since it contains your Ethereum address and AIN private key.
 
@@ -135,7 +136,7 @@ To terminate the AIN Worker, enter the following command:
 $ docker rm -f $(docker ps -f "label=${WORKER_NAME}" -q -a)
 
 // Only Train Mode.
-$ rm -rf /ain-worker/${WORKER_NAME}
+$ rm -rf /ain-worker/${WORKER_NAME}/train
 ```
 
 

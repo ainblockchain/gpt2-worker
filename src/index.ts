@@ -10,8 +10,12 @@ program.command('serve').action(async () => {
   try {
     constants.validateConstants();
     const worker = new Worker();
-    await util.editJsonFile(constants.ENV_PATH, {
-      ...constants.ENV,
+    util.editJsonFile(constants.ENV_PATH, {
+      INFERENCE_MODEL_NAME: constants.INFERENCE_MODEL_NAME,
+      ETH_ADDRESS: constants.ETH_ADDRESS,
+      SERVICE_JSON: constants.SERVICE_JSON,
+      SLACK_WEBHOOK_URL: constants.SLACK_WEBHOOK_URL,
+      GPU_DEVICE_NUMBER: constants.GPU_DEVICE_NUMBER,
       AIN_PRIVATE_KEY: worker.getAinConnect().getPrivateKey(),
       AIN_ADDRESS: worker.getAinConnect().getAddress(),
     });

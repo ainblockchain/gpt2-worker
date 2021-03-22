@@ -3,22 +3,23 @@ import { isValidAddress } from '@ainblockchain/ain-util';
 
 export const { WORKER_NAME } = process.env;
 export const ROOT_PATH = `/ain-worker/${WORKER_NAME}`;
-export const SHARED_ROOT_PATH = './shared';
+export const SHARED_ROOT_PATH = '/server/shared';
 export const ENV_PATH = `${SHARED_ROOT_PATH}/env.json`;
 export const SERVICE_JSON_PATH = '/server/shared/service.json';
 
 let env;
-try {
+if (fs.existsSync(ENV_PATH)) {
   env = JSON.parse(String(fs.readFileSync(ENV_PATH)));
-} catch (err) {
+} else {
   env = {};
 }
-// process.env > env.json
+
 env = {
   ...env,
   ...process.env,
 };
 
+// process.env > env.json
 export const {
   INFERENCE_MODEL_NAME,
   ETH_ADDRESS,
@@ -27,12 +28,6 @@ export const {
   SLACK_WEBHOOK_URL,
   GPU_DEVICE_NUMBER,
 } = env;
-export const ENV = env;
-
-// (Temp) For Using @google-cloud/storage, Only Train Mode.
-if (SERVICE_JSON) {
-  fs.writeFileSync(SERVICE_JSON_PATH, SERVICE_JSON);
-}
 
 export const STATUS_CODE = {
   SUCCESS: 0,
@@ -45,7 +40,7 @@ export const ENABLE_AUTO_PAYOUT = env.ENABLE_AUTO_PAYOUT || 'true';
 export const START_TIME = Date.now();
 
 export const validateConstants = () => {
-  if (!WORKER_NAME || !/^[A-z]+$/.test(WORKER_NAME)) {
+  if (!WORKER_NAME || !/^[A-z]+[A-z0-9]*$/.test(WORKER_NAME)) {
     throw new Error(`Invalid ENV[WORKER_NAME=${WORKER_NAME}] - ^[A-z]+$`);
   } else if (!ETH_ADDRESS || !isValidAddress(ETH_ADDRESS)) {
     throw new Error(`Invalid ENV[ETH_ADDRESS=${ETH_ADDRESS}]`);

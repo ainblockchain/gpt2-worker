@@ -83,7 +83,7 @@ export function getUserTransactionsPath(address: string) {
   return `/user_transactions/${address}/`;
 }
 
-export function gettrainingPath(address: string) {
+export function getTrainingPath(address: string) {
   return `/training/${address}/`;
 }
 

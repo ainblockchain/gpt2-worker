@@ -14,7 +14,7 @@ const transports = (constants.SLACK_WEBHOOK_URL) ? [
     formatter: (info) => ({
       attachments: [
         {
-          pretext: `*AI WORKER: ${(constants.INFERENCE_CONTAINER_PORT) ? 'Inference Mode' : 'Train Mode'}*`,
+          pretext: `*AI WORKER: ${(constants.INFERENCE_MODEL_NAME) ? 'Inference Mode' : 'Train Mode'}*`,
           color: (info.level === 'error') ? '#D00000' : '#2ad979',
           fields: [
             {

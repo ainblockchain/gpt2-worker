@@ -339,7 +339,7 @@ export default class AinConnect {
   listenForInferenceRequest(handler: Function) {
     this.app.database()
       .ref(firebaseInfo.getInferencePath(this.keyInfo.address))
-      .on('child_added', () => async (
+      .on('child_added', async (
         data: firebase.database.DataSnapshot) => {
         const requestId = data.key as string;
         const value = data.val();
@@ -377,8 +377,8 @@ export default class AinConnect {
    */
   listenForTrainRequest(startHandler: Function, cancelHandler: Function) {
     this.app.database()
-      .ref(firebaseInfo.gettrainingPath(this.keyInfo.address))
-      .on('child_added', () => async (
+      .ref(firebaseInfo.getTrainingPath(this.keyInfo.address))
+      .on('child_added', async (
         data: firebase.database.DataSnapshot) => {
         const trainId = data.key as string;
         const value = data.val();
