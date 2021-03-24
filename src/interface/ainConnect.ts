@@ -388,7 +388,6 @@ export default class AinConnect {
           if (value.type === 'cancel') {
             await cancelHandler(trainId, {
               trainId: value.trainId,
-              needSave: value.needSave,
             });
             return;
           }

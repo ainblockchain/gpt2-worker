@@ -278,7 +278,6 @@ export default class Worker {
         throw new Error('Not training');
       }
       this.trainInfo.cancelId = cancelId;
-      this.trainInfo.needSave = params.needSave;
       const containerName = `train${constants.WORKER_NAME!}`;
       if (Docker.existContainer(containerName)) {
         await Docker.execContainer(containerName,
@@ -326,7 +325,7 @@ export default class Worker {
     },
     async () => {
       // End Handler
-      const { cancelId, needSave } = this.trainInfo;
+      const { cancelId } = this.trainInfo;
       this.trainInfo = {
         running: false,
       };
@@ -335,7 +334,7 @@ export default class Worker {
       let status = 'failed';
       const existModel = util.fileExists(params.outputLocalPath);
       if (cancelId) {
-        status = (existModel && needSave) ? 'completed' : 'canceled';
+        status = 'canceled';
       } else if (existModel) {
         status = 'completed';
       }

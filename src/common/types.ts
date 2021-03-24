@@ -80,12 +80,10 @@ export type MonitoringParams = {
 
 export type CancelTrainingParams = {
   trainId: string;
-  needSave: boolean;
 }
 
 export type TrainInfo = {
   running: boolean;
   trainId?: string;
   cancelId?: string;
-  needSave?: boolean;
 }
