@@ -300,7 +300,7 @@ export default class Worker {
     this.trainLogData = {};
     const watch = util.watchJsonFile(params.logPath, async (value: Object, errMessage: string) => {
       if (errMessage) {
-        log.error(`[-] Failed to watch Train Log - ${errMessage}`);
+        log.debug(`[-] Failed to watch Train Log - ${errMessage}`);
         return;
       }
 

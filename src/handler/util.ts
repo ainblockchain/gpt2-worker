@@ -41,16 +41,15 @@ export function editJsonFile(filePath: string, jsonData: Object) {
 export function watchJsonFile(jsonFilePath: string, callback: Function) {
   fs.writeFileSync(jsonFilePath, '');
   return fs.watch(jsonFilePath, async () => {
-    let data;
     try {
-      data = String(fs.readFileSync(jsonFilePath));
+      const data = String(fs.readFileSync(jsonFilePath));
       if (data === '') {
         return;
       }
       const json = JSON.parse(data);
       await callback(json);
     } catch (err) {
-      await callback(null, `${err.message} - data: ${data}`);
+      await callback(null, err.message);
     }
   });
 }
