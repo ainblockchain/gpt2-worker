@@ -47,6 +47,7 @@
     "queue-typescript": "^1.0.1",
     "sinon": "^9.2.0",
     "winston": "^3.2.1",
+    "winston-slack-webhook-transport": "^2.0.1",
     "xhr2": "^0.2.0"
   },
   "scripts": {

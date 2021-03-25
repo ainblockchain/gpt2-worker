@@ -12,7 +12,7 @@ export default class Docker {
    * @param image - Docker Image Path.
    * @param option - (publishPorts...)
    */
-  static async runContainerWithGpu(name: string,
+  static async runContainer(name: string,
     image: string,
     option: types.CreateContainerOption) {
     // Pull Docker Container Image.

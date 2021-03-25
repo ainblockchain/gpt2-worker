@@ -1,5 +1,3 @@
-export type EnvType = 'prod' | 'staging';
-
 export type GPUInfo = {
   [gpuName: string]: {
     driverVersion: string;
@@ -82,12 +80,10 @@ export type MonitoringParams = {
 
 export type CancelTrainingParams = {
   trainId: string;
-  needSave: boolean;
 }
 
 export type TrainInfo = {
   running: boolean;
   trainId?: string;
   cancelId?: string;
-  needSave?: boolean;
 }

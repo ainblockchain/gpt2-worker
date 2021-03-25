@@ -11,7 +11,7 @@ describe('handler/docker', () => {
     sinon.restore();
   });
 
-  it('runContainerWithGpu', async () => {
+  it('runContainer', async () => {
     let result;
     (Docker as any).dockerode = {
       createContainer: async (createContainerOptions: any) => {
@@ -27,7 +27,7 @@ describe('handler/docker', () => {
     const publishPorts = {
       80: '80',
     };
-    await Docker.runContainerWithGpu(
+    await Docker.runContainer(
       name,
       image, {
         gpuDeviceNumber,
