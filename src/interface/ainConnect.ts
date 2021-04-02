@@ -323,13 +323,23 @@ export default class AinConnect {
    * @param storagePath Firebase Storage Path.
    * @param filePath File Path to Upload.
    */
-  async uploadFile(storagePath: string, filePath: string) {
+  async uploadFile(trainId: string, userAddress: string, storagePath: string, filePath: string) {
     const bucketName = firebaseInfo.BUCKET_NAME;
     const storage = new Storage();
     const myBucket = storage.bucket(bucketName);
-
+    const totalBytes = fs.statSync(filePath).size;
+    let currentStep = 0;
     await myBucket.upload(filePath, {
       destination: storagePath,
+      onUploadProgress: async (snapshot) => {
+        const archivingProgress = (snapshot.bytesWritten / totalBytes) * 100;
+        if (archivingProgress >= currentStep * 5) {
+          currentStep += 1;
+          await this.updateTrainingResult(trainId, userAddress, {
+            archivingProgress,
+          });
+        }
+      },
     });
   }
 

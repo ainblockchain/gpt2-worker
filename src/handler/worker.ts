@@ -341,7 +341,12 @@ export default class Worker {
 
       if (status === 'completed') {
         try {
-          await this.ainConnect.uploadFile(params.uploadModelPath, params.outputLocalPath);
+          await this.ainConnect.uploadFile(
+            params.trainId,
+            params.userAddress,
+            params.uploadModelPath,
+            params.outputLocalPath,
+          );
         } catch (err) {
           status = 'failed';
           log.error(`[-] Failed to upload model - ${err}`);
