@@ -341,6 +341,10 @@ export default class AinConnect {
         }
       },
     });
+
+    await this.updateTrainingResult(trainId, userAddress, {
+      archivingProgress: 100,
+    });
   }
 
   /**

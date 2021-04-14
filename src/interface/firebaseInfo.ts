@@ -21,8 +21,7 @@ export const FIREBASE_CONFIG = (NODE_ENV === 'prod') ? {
   measurementId: 'G-8NBD57K71C',
 };
 
-// @TODO Change to Prod Bucket Name.
-export const BUCKET_NAME = (NODE_ENV) ? 'gpt2-ainetwork.appspot.com' : 'gpt2-ainetwork.appspot.com';
+export const BUCKET_NAME = (NODE_ENV === 'prod') ? 'gpt2-ainetwork-prod.appspot.com' : 'gpt2-ainetwork.appspot.com';
 
 export const THRESHOLD_PAYOUT_AMOUNT = 100;
 
