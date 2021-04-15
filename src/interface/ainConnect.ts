@@ -303,7 +303,7 @@ export default class AinConnect {
         response.pipe(file);
         file.on('finish', () => {
           file.close();
-          resolve();
+          resolve('');
         });
 
         file.on('error', (err) => {
@@ -324,7 +324,7 @@ export default class AinConnect {
    * @param filePath File Path to Upload.
    */
   async uploadFile(trainId: string, userAddress: string, storagePath: string, filePath: string) {
-    const bucketName = firebaseInfo.BUCKET_NAME;
+    const bucketName = firebaseInfo.FIREBASE_CONFIG.storageBucket;
     const storage = new Storage();
     const myBucket = storage.bucket(bucketName);
     const totalBytes = fs.statSync(filePath).size;
