@@ -7,7 +7,7 @@ import Docker from './docker';
 import * as constants from '../common/constants';
 import AinConnect from '../interface/ainConnect';
 import {
-  THRESHOLD_PAYOUT_AMOUNT, existsBucket, BUCKET_NAME,
+  THRESHOLD_PAYOUT_AMOUNT, existsBucket, FIREBASE_CONFIG,
 } from '../interface/firebaseInfo';
 
 const log = Logger.createLogger('handler/worker');
@@ -122,7 +122,7 @@ export default class Worker {
 
   private startTrain = async () => {
     // Train Mode.
-    const existsBucketResult = await existsBucket(BUCKET_NAME);
+    const existsBucketResult = await existsBucket(FIREBASE_CONFIG.storageBucket);
     if (!existsBucketResult) {
       throw new Error('Invalid Service.json');
     }
