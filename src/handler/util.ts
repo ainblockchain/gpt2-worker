@@ -14,13 +14,16 @@ export async function getGpuInfo(): Promise<types.GPUInfo> {
   const infoList = stdout.split('\n');
   infoList.pop();
   const result = {};
+  let idx = 0;
   for (const info of infoList) {
     const dataList = info.split(',').map((item: string) => item.replace(' ', ''));
-    result[dataList[0]] = {
+    result[`${dataList[0]}-${idx}`] = {
+      gpuName: dataList[0],
       driverVersion: dataList[1],
       memoryUsed: dataList[2],
       memoryTotal: dataList[3],
     };
+    idx += 1;
   }
   return result;
 }
