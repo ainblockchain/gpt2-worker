@@ -74,7 +74,7 @@ describe('interface/ainConnect', () => {
     }).toEqual(resultParams['tx_body']['operation']);
   });
 
-  it('payout', () => {
+  it('payout', async () => {
     const ainConnect = new AinConnect(PRIVATE_KEY, true);
     let resultParams = {};
     let resultFunctionsName = '';
@@ -87,7 +87,8 @@ describe('interface/ainConnect', () => {
         },
       }),
     };
-    (ainConnect as any).payout(amount);
+    (ainConnect as any).getPoolAddr = async () => '0x744Cb74A78Ac6dae46ebdaCa43e38ED60F965B8';
+    await (ainConnect as any).payout(amount);
     const { timestamp } = resultParams['tx_body'];
     // eslint-disable-next-line camelcase
     const { eth_address } = resultParams['tx_body']['operation']['value'];
@@ -110,7 +111,7 @@ describe('interface/ainConnect', () => {
               tx_body: {
                 nonce: -1,
                 operation: {
-                  ref: `/transfer/0x8bdd9aa9fFcFDc4b09D41649C7Ac802E21b544Cb/0x945bDFa911cf895Bca3F4b5B5816BcfDb5A1480b/${timestamp}/value`,
+                  ref: `/transfer/0x8bdd9aa9fFcFDc4b09D41649C7Ac802E21b544Cb/0x744Cb74A78Ac6dae46ebdaCa43e38ED60F965B8/${timestamp}/value`,
                   type: firebaseInfo.OPERRATION_TYPE.setValue,
                   value: amount,
                 },
@@ -206,87 +207,5 @@ describe('interface/ainConnect', () => {
       },
       timestamp: resultParams['tx_body']['timestamp'],
     }).toEqual(resultParams['tx_body']);
-  });
-
-  it('JobRequestHandler', async () => {
-    const ainConnect = new AinConnect(PRIVATE_KEY, true);
-    const requestId = 'requestId';
-    const data = {
-      key: requestId,
-      val: () => ({
-        data: {
-          requestedAt: 99999999999999,
-        },
-      }),
-    };
-
-    const method = async () => 'success';
-    let result;
-    (ainConnect as any).sendInferenceResult = async (_: string, value: any) => {
-      result = value;
-    };
-    await (ainConnect as any).JobRequestHandler(method)(data);
-
-    expect({
-      params: {
-        address: '0x8bdd9aa9fFcFDc4b09D41649C7Ac802E21b544Cb',
-        requestId,
-      },
-      result: 'success',
-      statusCode: 0,
-    }).toEqual(result);
-  });
-
-  it('JobRequestHandler [value.data.requestedAt < constants.START_TIME]', async () => {
-    const ainConnect = new AinConnect(PRIVATE_KEY, true);
-    const requestId = 'requestId';
-    const data = {
-      key: requestId,
-      val: () => ({
-        data: {
-          requestedAt: 10000000,
-        },
-      }),
-    };
-
-    const method = async () => 'success';
-    let result;
-    (ainConnect as any).sendInferenceResult = async (_: string, value: any) => {
-      result = value;
-    };
-    await (ainConnect as any).JobRequestHandler(method)(data);
-
-    expect(undefined).toEqual(result);
-  });
-
-  it('JobRequestHandler [method error]', async () => {
-    const ainConnect = new AinConnect(PRIVATE_KEY, true);
-    const requestId = 'requestId';
-    const data = {
-      key: requestId,
-      val: () => ({
-        data: {
-          requestedAt: 99999999999999,
-        },
-      }),
-    };
-
-    const method = async () => {
-      throw new Error('error');
-    };
-    let result;
-    (ainConnect as any).sendInferenceResult = async (_: string, value: any) => {
-      result = value;
-    };
-    await (ainConnect as any).JobRequestHandler(method)(data);
-
-    expect({
-      errMessage: 'Error: error',
-      params: {
-        address: '0x8bdd9aa9fFcFDc4b09D41649C7Ac802E21b544Cb',
-        requestId,
-      },
-      statusCode: 1,
-    }).toEqual(result);
   });
 });

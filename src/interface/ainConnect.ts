@@ -5,10 +5,18 @@ import firebase from 'firebase/app';
 import 'firebase/auth';
 import 'firebase/database';
 import 'firebase/functions';
+import 'firebase/storage';
+import * as https from 'https';
+import * as fs from 'fs';
+import { Storage } from '@google-cloud/storage';
 import * as constants from '../common/constants';
 import * as firebaseInfo from './firebaseInfo';
 import * as types from '../common/types';
 import Logger from '../common/logger';
+
+// Polyfills required for Firebase
+// eslint-disable-next-line import/no-unresolved
+(global as any).XMLHttpRequest = require('xhr2');
 
 const log = Logger.createLogger('interface/ainConnect');
 
@@ -27,6 +35,7 @@ export default class AinConnect {
     const privateKeyBuffer = (privateKey) ? ainUtil.toBuffer(privateKey)
       : HDKey.fromMasterSeed(mnemonicToSeedSync(generateMnemonic()))
         .derive("m/44'/412'/0'/0/0").privateKey;
+
     this.keyInfo = {
       privateKeyBuffer,
       publicKeyBuffer: ainUtil.privateToPublic(privateKeyBuffer),
@@ -34,8 +43,7 @@ export default class AinConnect {
         .toString('hex')}`),
     };
     if (test) return;
-    const firebaseConfig = (constants.NODE_ENV === 'prod') ? firebaseInfo.PROD_FIREBASE_CONFIG : firebaseInfo.STAGING_FIREBASE_CONFIG;
-    this.app = firebase.initializeApp(firebaseConfig);
+    this.app = firebase.initializeApp(firebaseInfo.FIREBASE_CONFIG);
   }
 
   getPrivateKeyBuffer() {
@@ -58,10 +66,6 @@ export default class AinConnect {
     return firebase.database.ServerValue.TIMESTAMP;
   }
 
-  getApp() {
-    return this.app;
-  }
-
   getAddress() {
     return this.keyInfo.address;
   }
@@ -70,7 +74,7 @@ export default class AinConnect {
    * Sign Transaction.
    * @param txBody
    */
-  signTx(txBody: ainUtil.TransactionBody) {
+  private signTx(txBody: ainUtil.TransactionBody) {
     const sig = ainUtil.ecSignTransaction(txBody, this.keyInfo.privateKeyBuffer);
     const sigBuffer = ainUtil.toBuffer(sig);
     const lenHash = sigBuffer.length - 65;
@@ -110,24 +114,15 @@ export default class AinConnect {
   }
 
   /**
-   * signIn using Custom Token.
-   */
-  async signIn() {
-    const token = await this.getAuthToken();
-    await this.app.auth()
-      .signInWithCustomToken(token);
-  }
-
-  /**
    * get payload about transfer.
    * @param payoutAmount - payout amount
    */
-  private getPayloadForTransfer(payoutAmount: number) {
+  private getPayloadForTransfer(poolAddr: string, payoutAmount: number) {
     const timestamp = Date.now();
     const transaction = {
       operation: {
         type: firebaseInfo.OPERRATION_TYPE.setValue,
-        ref: firebaseInfo.getTransferValuePath(this.keyInfo.address, firebaseInfo.PAYOUT_POOL_ADDR, `${timestamp}`),
+        ref: firebaseInfo.getTransferValuePath(this.keyInfo.address, poolAddr, `${timestamp}`),
         value: payoutAmount,
       },
       timestamp,
@@ -137,11 +132,40 @@ export default class AinConnect {
   }
 
   /**
+   * signIn using Custom Token.
+   */
+  async signIn() {
+    const token = await this.getAuthToken();
+    await this.app.auth()
+      .signInWithCustomToken(token);
+  }
+
+  async getPoolAddr() {
+    const snap = await this.app.database()
+      .ref(firebaseInfo.getPoolAddrPath())
+      .once('value');
+
+    let poolAddr;
+    for (const [addr, key] of Object.entries(snap.val())) {
+      if (key === 'C_AIN_POOL') {
+        poolAddr = addr;
+      }
+    }
+
+    if (!poolAddr) {
+      throw new Error('poolAddr Not Exist');
+    }
+
+    return poolAddr;
+  }
+
+  /**
    * Request to Payout.
    * @param payoutAmount - payout amount
    */
   async payout(payoutAmount: number) {
-    const payloadForTransfer = this.getPayloadForTransfer(payoutAmount);
+    const poolAddr = await this.getPoolAddr();
+    const payloadForTransfer = this.getPayloadForTransfer(poolAddr, payoutAmount);
     const { timestamp } = payloadForTransfer.signedTx.tx_body;
     const transaction = {
       operation: {
@@ -157,7 +181,6 @@ export default class AinConnect {
       timestamp,
       nonce: -1,
     };
-
     await this.app.functions()
       .httpsCallable(firebaseInfo.FUNCTIONS_NAMES.sendSignedTransaction)(this.signTx(transaction)
         .signedTx);
@@ -205,6 +228,16 @@ export default class AinConnect {
   }
 
   /**
+   * Get Job Type Information.
+   */
+  async getJobTypeInfo(jobType: string): Promise<types.JobTypeInfo> {
+    const snap = await this.app.database()
+      .ref(`${firebaseInfo.getjobTypesPath()}/${jobType}`)
+      .once('value');
+    return (snap.exists()) ? snap.val() : undefined;
+  }
+
+  /**
    * Get Current Balance.
    */
   async getCurrentBalance() {
@@ -220,7 +253,7 @@ export default class AinConnect {
    */
   async setWorkerInfo(workerInfo: types.WorkerInfo) {
     const timestamp = Date.now();
-    const transaction = {
+    const transaction = JSON.parse(JSON.stringify({
       operation: {
         type: firebaseInfo.OPERRATION_TYPE.setValue,
         ref: firebaseInfo.getWorkerInfoPath(this.keyInfo.address),
@@ -229,16 +262,186 @@ export default class AinConnect {
           params: {
             address: this.getAddress(),
             eth_address: constants.ETH_ADDRESS,
-            jobType: workerInfo.jobType,
+            ...workerInfo,
           },
         },
       },
       timestamp,
       nonce: -1,
-    };
-
+    }));
     await this.app.functions()
-      .httpsCallable(firebaseInfo.FUNCTIONS_NAMES.setWorkerInfo)(this.signTx(transaction).signedTx);
+      .httpsCallable(firebaseInfo.FUNCTIONS_NAMES.setWorkerInfo)(
+        this.signTx(transaction).signedTx,
+      );
+  }
+
+  /**
+   * Listen For Transaction(user).
+   */
+  listenTransaction(method: (params: types.UserTransactionParams) => void) {
+    this.app.database()
+      .ref(firebaseInfo.getUserTransactionsPath(this.keyInfo.address))
+      .on('child_added', (snap) => {
+        method(snap.val());
+      });
+  }
+
+  /**
+   * download file on Firebase storage.
+   * @param storagePath Firebase storage path.
+   * @param destPath local path.
+   */
+  async downloadFile(storagePath: string, destPath: string) {
+    const url = await this.app.storage().ref(storagePath).getDownloadURL();
+    const file = fs.createWriteStream(destPath);
+
+    return new Promise((resolve, reject) => {
+      const request = https.get(url, (response) => {
+        if (response.statusCode !== 200) {
+          reject(new Error('Failed to request'));
+        }
+        response.pipe(file);
+        file.on('finish', () => {
+          file.close();
+          resolve('');
+        });
+
+        file.on('error', (err) => {
+          fs.unlink(destPath, () => {});
+          reject(err);
+        });
+      });
+      request.on('error', (err) => {
+        fs.unlink(destPath, () => {});
+        reject(err);
+      });
+    });
+  }
+
+  /**
+   * Upload File to Firebase Storage.
+   * @param storagePath Firebase Storage Path.
+   * @param filePath File Path to Upload.
+   */
+  async uploadFile(trainId: string, userAddress: string, storagePath: string, filePath: string) {
+    const bucketName = firebaseInfo.FIREBASE_CONFIG.storageBucket;
+    const storage = new Storage();
+    const myBucket = storage.bucket(bucketName);
+    const totalBytes = fs.statSync(filePath).size;
+    let currentStep = 0;
+    await myBucket.upload(filePath, {
+      destination: storagePath,
+      onUploadProgress: async (snapshot) => {
+        const archivingProgress = (snapshot.bytesWritten / totalBytes) * 100;
+        if (archivingProgress >= currentStep * 5) {
+          currentStep += 1;
+          await this.updateTrainingResult(trainId, userAddress, {
+            archivingProgress,
+          });
+        }
+      },
+    });
+
+    await this.updateTrainingResult(trainId, userAddress, {
+      archivingProgress: 100,
+    });
+  }
+
+  /**
+   * Listen For Inference Request.
+   */
+  listenForInferenceRequest(handler: Function) {
+    this.app.database()
+      .ref(firebaseInfo.getInferencePath(this.keyInfo.address))
+      .on('child_added', async (
+        data: firebase.database.DataSnapshot) => {
+        const requestId = data.key as string;
+        const value = data.val();
+        let result;
+        if (value.data.requestedAt < constants.START_TIME) return;
+        try {
+          result = {
+            statusCode: constants.STATUS_CODE.SUCCESS,
+            result: await handler(value),
+          };
+        } catch (e) {
+          result = {
+            statusCode: constants.STATUS_CODE.FAILED,
+            errMessage: e.message,
+          };
+        }
+        try {
+          await this.sendInferenceResult(requestId, {
+            ...result,
+            params: {
+              ...value.params,
+              address: this.getAddress(),
+              requestId,
+            },
+          });
+        } catch (error) {
+          log.error('[-] Failed to send Inference Result');
+        }
+      });
+  }
+
+  /**
+   * Listen For Train Request.
+   * @param method
+   */
+  listenForTrainRequest(startHandler: Function, cancelHandler: Function) {
+    this.app.database()
+      .ref(firebaseInfo.getTrainingPath(this.keyInfo.address))
+      .on('child_added', async (
+        data: firebase.database.DataSnapshot) => {
+        const trainId = data.key as string;
+        const value = data.val();
+        let result;
+        log.debug(`[+] Request to train(id: ${trainId}) - params: ${JSON.stringify(value, null, 4)}`);
+        try {
+          if (value.type === 'cancel') {
+            await cancelHandler(trainId, {
+              trainId: value.trainId,
+            });
+            return;
+          }
+          const jobTypeInfo = await this.getJobTypeInfo(value.jobType);
+          if (!jobTypeInfo || jobTypeInfo.type !== 'training') {
+            throw new Error('Invalid Params');
+          }
+          result = await startHandler(trainId, {
+            ...value,
+            datasetPath: firebaseInfo.getDatasetPath(value.uid, trainId, value.fileName),
+            imagePath: jobTypeInfo.imagePath,
+            uploadModelPath: firebaseInfo.getModelUploadPath(trainId,
+              this.getAddress(), `${value.jobType}.mar`),
+          });
+        } catch (e) {
+          if (e.message === 'canceled') {
+            result = {
+              isCancelDone: true,
+              status: 'canceled',
+            };
+          } else {
+            result = {
+              status: 'failed',
+              errMessage: e.message,
+            };
+          }
+        }
+        try {
+          await this.updateTrainingResult(trainId, value.uid, {
+            ...result,
+            params: {
+              ...value.params,
+              address: this.getAddress(),
+              trainId,
+            },
+          });
+        } catch (error) {
+          log.error(`[-] Failed to send training Result - ${error.message}`);
+        }
+      });
   }
 
   /**
@@ -262,61 +465,28 @@ export default class AinConnect {
     };
 
     await this.app.functions()
-      .httpsCallable(firebaseInfo.FUNCTIONS_NAMES.inferResponse)(this.signTx(transaction).signedTx);
+      .httpsCallable(firebaseInfo.FUNCTIONS_NAMES.inferResponse)(this.signTx(transaction)
+        .signedTx);
   }
 
   /**
-   * Listen For JobRequest.
+   * Update Result about Training.
+   * @param trainId Train Task Id.
+   * @param value Update Data.
    */
-  listenForJobRequest(method: (params: types.InferenceHandlerParams) => void) {
-    this.app.database()
-      .ref(firebaseInfo.getInferencePath(this.keyInfo.address))
-      .on('child_added', this.JobRequestHandler(method));
-  }
+  async updateTrainingResult(trainId: string, userAddress: string, value: any) {
+    const transaction = {
+      operation: {
+        type: firebaseInfo.OPERRATION_TYPE.setValue,
+        ref: firebaseInfo.getTrainingResultPath(trainId, userAddress, this.keyInfo.address),
+        value,
+      },
+      timestamp: Date.now(),
+      nonce: -1,
+    };
 
-  /**
-   * Handler for JobRequest.
-   */
-  private JobRequestHandler = (method: Function) => async (
-    data: firebase.database.DataSnapshot) => {
-    const requestId = data.key as string;
-    const value = data.val();
-    let result;
-
-    if (value.data.requestedAt < constants.START_TIME) return;
-    try {
-      result = {
-        statusCode: constants.statusCode.Success,
-        result: await method(value),
-      };
-    } catch (e) {
-      result = {
-        statusCode: constants.statusCode.Failed,
-        errMessage: String(e),
-      };
-    }
-    try {
-      await this.sendInferenceResult(requestId, {
-        ...result,
-        params: {
-          ...value.params,
-          address: this.getAddress(),
-          requestId,
-        },
-      });
-    } catch (error) {
-      log.error('[-] Failed to send Inference Result');
-    }
-  }
-
-  /**
-   * Listen For Transaction(user).
-   */
-  listenTransaction(method: (params: types.UserTransactionParams) => void) {
-    this.app.database()
-      .ref(firebaseInfo.getUserTransactionsPath(this.keyInfo.address))
-      .on('child_added', (snap) => {
-        method(snap.val());
-      });
+    await this.app.functions()
+      .httpsCallable(firebaseInfo.FUNCTIONS_NAMES.sendSignedTransaction)(this.signTx(transaction)
+        .signedTx);
   }
 }

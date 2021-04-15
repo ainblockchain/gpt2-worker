@@ -1,6 +1,4 @@
 # AI Network Worker
-
-
 In order to run an AIN worker, you need an ubuntu environment with GPU. The required GPU specifications may differ depending on the types of model to be served, and the requirements for each model can be found in the Model List section. In this tutorial, we will run a worker that provides the gpt-2-large-torch-serving model in the ubuntu 18.04 environment where Tesla K80 is installed.
 
 # Run AIN Worker
@@ -79,24 +77,29 @@ $ sudo docker pull ainblockchain/worker-docker
 After that, run AIN Worker with the command below:
 
 ```
-$ sudo docker run -d --name ain-worker \
- -v {/PATH/TO/CONFIG}:/server/env.json \
+$ docker run -l ${WORKER_NAME} -d --restart unless-stopped --name ${WORKER_NAME} --gpus "\"device=${GPU_DEVICE_NUMBER ex. 0,1}\"" \
+ -e WORKER_NAME=${WORKER_NAME} \
+ -e ETH_ADDRESS=${ETH_ADDRESS} \
+ -e GPU_DEVICE_NUMBER=${GPU_DEVICE_NUMBER} \
+ [-e INFERENCE_MODEL_NAME=${INFERENCE_MODEL_NAME} \ ]  // Only inference mode.
+ [-v SERVICE_JSON_PATH:/server/service.json \ ]        // Only train mode.
+ -v /ain-worker/${WORKER_NAME}:/server/shared \
  -v /var/run/docker.sock:/var/run/docker.sock \
  --network host ainblockchain/worker-docker
 ```
+- (Optional Env) INFERENCE_CONTAINER_PORT: default = 7777
+- (Optional Env) ENABLE_AUTO_PAYOUT: default = true
+- (Optional Env) SLACK_WEBHOOK_URL: default = null
 
-**/PATH/TO/CONFIG** contains the path to the config file that contains the parameters required to run a worker. After creating a file in the form below, replace **/PATH/TO/CONFIG** with the path of the file. After successfully running a worker, keep the config file safe, since it contains your Ethereum address and AIN private key.
+**/ain-worker** contains the path to the config file that contains the parameters required to run a worker. After creating a file in the form below, replace **/ain-worker** with the path of the file. After successfully running a worker, keep the config file safe, since it contains your Ethereum address and AIN private key.
 
 ```
+// example
 {
-    // Ethereum wallet address to receive rewards
-    "ETH_ADDRESS": {INPUT YOUR ETHEREUM WALLET ADDRESS HERE},
-    // Model name you want to serve on the worker
-    "MODEL_NAME": {INPUT MODEL NAME ON MODEL LIST},
-    // GPU device number to be used by the worker
-    "GPU_DEVICE_NUMBER": "0",
-    // (Optional) If it doesn't exist, it will be created automatically.
-    "AIN_PRIVATE_KEY": {INPUT YOUR AIN PRIVATE KEY}
+    "ETH_ADDRESS": '0x~~', // Ethereum wallet address to receive rewards
+    "INFERENCE_MODEL_NAME": 'gpt-2-large-torch-serving',
+    "GPU_DEVICE_NUMBER": '0,1',
+    "AIN_PRIVATE_KEY": '0x~~'
 }
 ```
 
@@ -130,8 +133,10 @@ After that, once the following message is displayed, the model is ready and is b
 To terminate the AIN Worker, enter the following command:
 
 ```
-$ sudo docker rm -f ain-worker {INPUT MODEL NAME ON MODEL LIST}
+$ docker rm -f $(docker ps -f "label=${WORKER_NAME}" -q -a)
 
+// Only Train Mode.
+$ rm -rf /ain-worker/${WORKER_NAME}/train
 ```
 
 
