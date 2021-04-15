@@ -5,7 +5,7 @@ export const { WORKER_NAME } = process.env;
 export const ROOT_PATH = `/ain-worker/${WORKER_NAME}`;
 export const SHARED_ROOT_PATH = '/server/shared';
 export const ENV_PATH = `${SHARED_ROOT_PATH}/env.json`;
-export const SERVICE_JSON_PATH = '/server/shared/service.json';
+export const SERVICE_JSON_PATH = '/server/service.json';
 
 let env;
 if (fs.existsSync(ENV_PATH)) {
@@ -44,7 +44,7 @@ export const validateConstants = () => {
     throw new Error(`Invalid ENV[WORKER_NAME=${WORKER_NAME}] - ^[A-z]+$`);
   } else if (!ETH_ADDRESS || !isValidAddress(ETH_ADDRESS)) {
     throw new Error(`Invalid ENV[ETH_ADDRESS=${ETH_ADDRESS}]`);
-  } else if (!['prod', 'staging'].includes(NODE_ENV)) {
+  } else if (!['prod', 'staging', 'dev'].includes(NODE_ENV)) {
     throw new Error(`Invalid ENV[NODE_ENV=${NODE_ENV}} - 'prod' or 'staging'`);
   } else if (!/^[0-9]+$/.test(INFERENCE_CONTAINER_PORT)) {
     throw new Error(`Invalid ENV[INFERENCE_CONTAINER_PORT=${INFERENCE_CONTAINER_PORT}} - ^[0-9]+$`);

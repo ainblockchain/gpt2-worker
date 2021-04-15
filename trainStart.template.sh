@@ -10,7 +10,7 @@ docker run -l ${WORKER_NAME} -d --restart unless-stopped --name ${WORKER_NAME} -
  -e WORKER_NAME=${WORKER_NAME} \
  -e ETH_ADDRESS=${ETH_ADDRESS} \
  -e GPU_DEVICE_NUMBER=${GPU_DEVICE_NUMBER} \
- -v ${SERVICE_JSON_PATH}:/server/shared/service.json \
+ -v ${SERVICE_JSON_PATH}:/server/service.json \
  -v /ain-worker/${WORKER_NAME}:/server/shared \
  -v /var/run/docker.sock:/var/run/docker.sock \
  --network host ainblockchain/worker-docker
