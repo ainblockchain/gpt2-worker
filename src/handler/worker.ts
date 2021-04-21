@@ -63,12 +63,16 @@ export default class Worker {
 
     // Set Worker Information on firebase database.
     setInterval(async () => {
-      const gpuInfo = await util.getGpuInfo();
-      await this.ainConnect.setWorkerInfo({
-        jobType: constants.INFERENCE_MODEL_NAME,
-        type: (constants.INFERENCE_MODEL_NAME) ? 'inference' : 'training',
-        gpuInfo,
-      });
+      try {
+        const gpuInfo = await util.getGpuInfo();
+        await this.ainConnect.setWorkerInfo({
+          jobType: constants.INFERENCE_MODEL_NAME,
+          type: (constants.INFERENCE_MODEL_NAME) ? 'inference' : 'training',
+          gpuInfo,
+        });
+      } catch (err) {
+        log.error(err);
+      }
     }, Worker.workerInfoUpdateMs);
 
     // Set Worker ETH_ADDRESS on firebase database.

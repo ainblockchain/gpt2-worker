@@ -33,7 +33,7 @@ export const FIREBASE_CONFIG = (NODE_ENV === 'prod') ? {
 
 export const THRESHOLD_PAYOUT_AMOUNT = 100;
 
-export const CURRENT_PROTOCOL_VERSION = '0.5.0';
+export const CURRENT_PROTOCOL_VERSION = '0.7.0';
 
 export const COLLABORATIVE_AI_PREFIX = '/apps/collaborative_ai';
 

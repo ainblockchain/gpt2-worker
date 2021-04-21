@@ -335,16 +335,23 @@ export default class AinConnect {
         const archivingProgress = (snapshot.bytesWritten / totalBytes) * 100;
         if (archivingProgress >= currentStep * 5) {
           currentStep += 1;
-          await this.updateTrainingResult(trainId, userAddress, {
-            archivingProgress,
-          });
+          try {
+            await this.updateTrainingResult(trainId, userAddress, {
+              archivingProgress,
+            });
+          } catch (err) {
+            log.error(err);
+          }
         }
       },
     });
-
-    await this.updateTrainingResult(trainId, userAddress, {
-      archivingProgress: 100,
-    });
+    try {
+      await this.updateTrainingResult(trainId, userAddress, {
+        archivingProgress: 100,
+      });
+    } catch (err) {
+      log.error(err);
+    }
   }
 
   /**
