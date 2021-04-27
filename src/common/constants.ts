@@ -3,9 +3,9 @@ import { isValidAddress } from '@ainblockchain/ain-util';
 
 export const { WORKER_NAME } = process.env;
 export const ROOT_PATH = `/ain-worker/${WORKER_NAME}`;
-export const SHARED_ROOT_PATH = '/server/shared';
+export const SHARED_ROOT_PATH = '/worker/shared';
 export const ENV_PATH = `${SHARED_ROOT_PATH}/env.json`;
-export const SERVICE_JSON_PATH = '/server/service.json';
+export const SERVICE_JSON_PATH = '/worker/service.json';
 
 let env;
 if (fs.existsSync(ENV_PATH)) {

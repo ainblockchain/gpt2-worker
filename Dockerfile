@@ -1,27 +1,27 @@
 FROM node:12.16.1-alpine AS build
 
-# copy server code.
-RUN mkdir /server
-WORKDIR /server
-ADD yarn.lock /server
-ADD package.json /server
-ADD ./tsconfig.json /server/tsconfig.json
+# copy worker code.
+RUN mkdir /worker
+WORKDIR /worker
+ADD yarn.lock /worker
+ADD package.json /worker
+ADD ./tsconfig.json /worker/tsconfig.json
 RUN npm install 
 RUN npm install -g typescript@3.9
-ADD ./src /server/src
+ADD ./src /worker/src
 
-WORKDIR /server
+WORKDIR /worker
 RUN tsc
 
 FROM node:12.16.1-slim
 
-RUN mkdir /server
-WORKDIR /server
-ADD package.json /server
-ADD yarn.lock /server
+RUN mkdir /worker
+WORKDIR /worker
+ADD package.json /worker
+ADD yarn.lock /worker
 RUN npm install --only=prod
-COPY --from=build /server/dist /server/dist
+COPY --from=build /worker/dist /worker/dist
 
-ENV GOOGLE_APPLICATION_CREDENTIALS /server/service.json
+ENV GOOGLE_APPLICATION_CREDENTIALS /worker/service.json
 
 CMD ["node", "dist/index.js", "serve"]

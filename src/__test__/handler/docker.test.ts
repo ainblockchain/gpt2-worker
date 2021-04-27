@@ -43,6 +43,7 @@ describe('handler/docker', () => {
       Env: [`NVIDIA_VISIBLE_DEVICES=${gpuDeviceNumber}`],
       Image: image,
       HostConfig: {
+        ShmSize: 4294967296,
         AutoRemove: true,
         Binds: undefined,
         PortBindings: {

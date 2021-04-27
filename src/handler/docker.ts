@@ -26,6 +26,7 @@ export default class Docker {
       Image: image,
       Labels: option.labels,
       HostConfig: {
+        ShmSize: 4294967296, // 4GB
         AutoRemove: true,
         Binds: option.binds,
         PortBindings: {},

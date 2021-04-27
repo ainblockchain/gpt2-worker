@@ -21,14 +21,14 @@ export const FIREBASE_CONFIG = (NODE_ENV === 'prod') ? {
   appId: '1:413933589405:web:73b59c581df50e5d729574',
   measurementId: 'G-SNCK4FLQBN',
 } : { // dev
-  apiKey: 'AIzaSyCaNna60wsEWDYhAleGVj5jjp3-24GCtN0',
-  authDomain: 'gpt2-ainetwork-prod.firebaseapp.com',
-  databaseURL: 'https://gpt2-ainetwork-prod.firebaseio.com',
-  projectId: 'gpt2-ainetwork-prod',
-  storageBucket: 'gpt2-ainetwork-prod.appspot.com',
-  messagingSenderId: '983388933112',
-  appId: '1:983388933112:web:a199871d763bcdb59e240d',
-  measurementId: 'G-CMS0JDQQB6',
+  apiKey: 'AIzaSyA_ss5fiOD6bckPQk7qnb_Ruwd29OVWXE8',
+  authDomain: 'gpt2-ainetwork.firebaseapp.com',
+  databaseURL: 'https://gpt2-ainetwork.firebaseio.com',
+  projectId: 'gpt2-ainetwork',
+  storageBucket: 'gpt2-ainetwork.appspot.com',
+  messagingSenderId: '1045334268091',
+  appId: '1:1045334268091:web:c0490dfa3e8057a078f19e',
+  measurementId: 'G-MVG9QTFBG8',
 };
 
 export const THRESHOLD_PAYOUT_AMOUNT = 100;

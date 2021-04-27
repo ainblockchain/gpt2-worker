@@ -82,8 +82,8 @@ $ docker run -l ${WORKER_NAME} -d --restart unless-stopped --name ${WORKER_NAME}
  -e ETH_ADDRESS=${ETH_ADDRESS} \
  -e GPU_DEVICE_NUMBER=${GPU_DEVICE_NUMBER} \
  [-e INFERENCE_MODEL_NAME=${INFERENCE_MODEL_NAME} \ ]  // Only inference mode.
- [-v SERVICE_JSON_PATH:/server/service.json \ ]        // Only train mode.
- -v /ain-worker/${WORKER_NAME}:/server/shared \
+ [-v SERVICE_JSON_PATH:/worker/service.json \ ]        // Only train mode.
+ -v /ain-worker/${WORKER_NAME}:/worker/shared \
  -v /var/run/docker.sock:/var/run/docker.sock \
  --network host ainblockchain/worker-docker
 ```
