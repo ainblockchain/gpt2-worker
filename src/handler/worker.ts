@@ -283,7 +283,8 @@ export default class Worker {
       }
       this.trainInfo.cancelId = cancelId;
       const containerName = `train${constants.WORKER_NAME!}`;
-      if (Docker.existContainer(containerName)) {
+      const exist = await Docker.existContainer(containerName);
+      if (exist) {
         await Docker.execContainer(containerName,
           "ps -aux | grep -m 1 python | awk '{print $2}' | xargs -I{} kill -9 {}");
       } else {

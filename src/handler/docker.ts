@@ -119,10 +119,11 @@ export default class Docker {
    * Method to check if container exists.
    * @param name - Container Name.
    */
-  static existContainer(name: string) {
+  static existContainer = async (name: string) => {
     try {
-      const result = Docker.dockerode.getContainer(name);
-      return !!result;
+      const container = Docker.dockerode.getContainer(name);
+      await container.inspect();
+      return true;
     } catch (_) {
       return false;
     }
