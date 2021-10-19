@@ -257,9 +257,11 @@ export default class Worker {
         uploadModelPath: params.uploadModelPath,
         outputLocalPath: `${workerRootPath}/${params.jobType}.mar`,
       });
-      return {
+      return (this.trainInfo.running) ? {
         startedAt: Date.now(),
         status: 'running',
+      } : {
+        startedAt: Date.now(), // If the container dies too quickly.
       };
     } catch (error) {
       this.trainInfo = {
